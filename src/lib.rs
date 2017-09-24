@@ -8,14 +8,12 @@ extern crate bytes;
 extern crate futures;
 #[macro_use]
 extern crate log;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio_io;
 
-mod errors;
-mod codec;
-mod message;
-mod endpoint;
-
-pub use endpoint::{Ack, Client, Endpoint, Response, Service, ServiceBuilder};
+mod core;
+// mod client;
+mod structs;

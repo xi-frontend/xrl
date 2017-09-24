@@ -9,9 +9,9 @@ use tokio_io::codec::Framed;
 use tokio_io::{AsyncRead, AsyncWrite};
 use serde_json::Value;
 
-use message::{Message, Notification, Request};
-use message::Response as ResponseMessage;
-use codec::Codec;
+use super::message::{Message, Notification, Request};
+use super::message::Response as ResponseMessage;
+use super::codec::Codec;
 
 pub trait Service {
     type Error: Error;

@@ -1,6 +1,7 @@
-use errors::*;
 use std::io::Read;
 use serde_json::{from_reader, to_vec, Value};
+
+use super::errors::*;
 
 #[derive(Serialize, PartialEq, Clone, Debug)]
 pub enum Message {
