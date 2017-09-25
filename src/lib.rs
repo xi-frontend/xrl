@@ -11,9 +11,14 @@ extern crate log;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 extern crate tokio_io;
 
 mod core;
-// mod client;
+mod client;
+mod errors;
 mod structs;
+
+pub use client::{RpcResult, Client};
+pub use errors::{RpcError};

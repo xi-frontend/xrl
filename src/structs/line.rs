@@ -1,6 +1,3 @@
-use serde;
-use serde_json as json;
-
 fn _return_true() -> bool {
     true
 }
