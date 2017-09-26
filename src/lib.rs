@@ -19,6 +19,7 @@ mod core;
 mod client;
 mod errors;
 mod structs;
+mod frontend;
 
 pub use client::{RpcResult, Client};
 pub use errors::{RpcError};
