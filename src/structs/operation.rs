@@ -17,8 +17,10 @@ pub struct Operation {
     #[serde(rename = "op")]
     #[serde(deserialize_with = "deserialize_operation_type")]
     pub operation_type: OperationType,
-    #[serde(rename = "n")] pub nb_lines: u64,
-    #[serde(default)] pub lines: Vec<Line>,
+    #[serde(rename = "n")]
+    pub nb_lines: u64,
+    #[serde(default)]
+    pub lines: Vec<Line>,
 }
 
 fn deserialize_operation_type<'de, D>(de: D) -> ::std::result::Result<OperationType, D::Error>

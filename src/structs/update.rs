@@ -3,7 +3,8 @@ use super::operation::Operation;
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct Update {
     pub rev: Option<u64>,
-    #[serde(rename = "ops")] pub operations: Vec<Operation>,
+    #[serde(rename = "ops")]
+    pub operations: Vec<Operation>,
     pub pristine: bool,
 }
 
