@@ -1,67 +1,49 @@
-#![allow(dead_code)]
-use std::collections::hash_map::HashMap;
-use std::io::BufReader;
-use std::io::prelude::*;
-use std::process::ChildStdin;
-use std::process::Command;
-use std::process::Stdio;
-
+use errors::RpcError;
+use core::Service;
+use futures::{future, Future};
+use serde_json::{Value, to_value, from_value};
 use structs::{Update, Style, Position};
 
-struct Stream {
-    stdout: ChildStdout,
-    stdin: ChildStdin,
-}
-
-impl Read for Stream {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.stdout.read(buf)
-    }
-}
-
-impl AsyncRead for Stream {
-    // FIXME: do I actually have to implement this?
-    unsafe fn prepare_uninitialized_buffer(&self, buf: &mut [u8]) -> bool {
-        self.stdout.prepare_uninitialized_buffer(buf)
-    }
-}
-
-impl Write for Stream {
-    fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        self.stdin.write(buf)
-    }
-}
-
-impl AsyncWrite for Stream {
-    fn shutdown(&mut self) -> Poll<(), io::Error> {
-        self.stdin.shutdown()
-    }
-}
 
 pub trait Frontend {
-    fn update<T, E>(update: Update) -> Box<Future<Item = (), Error = ()>>;
-    fn scroll_to(position: Position) -> Box<Future<Item = (), Error = ()>>;
-    fn set_style(style: Style) -> Box<Future<Item = (), Error = ()>>;
+    fn update(&mut self, update: Update) -> Box<Future<Item = (), Error = RpcError>>;
+    fn scroll_to(&mut self, line: u64, column: u64) -> Box<Future<Item = (), Error = RpcError>>;
+    fn set_style(&mut self, style: Style) -> Box<Future<Item = (), Error = RpcError>>;
 }
 
 impl<F: Frontend> Service for F {
     type T = Value;
     type E = Value;
-    type Error = String;
+    type Error = RpcError;
 
     fn handle_request(&mut self, method: &str, params: Value) -> Box<Future<Item = Result<Self::T, Self::E>, Error = Self::Error>> {
         // AFAIK the core does not send any request to frontends yet
-        Box::new(future::ok(Err(to_value("The frontend does not handle requests"))));
+        // We should return an RpcError here
+        unimplemented!();
     }
 
     fn handle_notification(&mut self, method: &str, params: Value) -> Box<Future<Item = (), Error = Self::Error>> {
         match method {
-            "update" => self.update(from_value::<Update>(params)),
-            "scroll_to" => self.scroll_to(from_value::<Position>(params)),
-            "set_style" => self.set_style(from_value::<Style>(params)),
+            "update" => {
+                match from_value::<Update>(params) {
+                    Ok(update) => self.update(update),
+                    Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
+                }
+            }
+            "scroll_to" => {
+                match from_value::<Position>(params) {
+                    Ok(position) => self.scroll_to(position.0, position.1),
+                    Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
+                }
+            }
+            "set_style" => {
+                match from_value::<Style>(params) {
+                    Ok(style) => self.set_style(style),
+                    Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
+                }
+            }
             _ =>  {
-                error!("Unknown method {:?}.", method);
-                Err(format!("Unknown method {:?}", method))
+                unimplemented!();
             }
         }
     }
