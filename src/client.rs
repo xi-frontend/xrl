@@ -1,13 +1,13 @@
 use futures::Future;
 use serde_json::Value;
 use errors::RpcError;
-use core;
+use protocol;
 use serde_json::{from_value, to_value};
 use serde::Serialize;
 
 pub type RpcResult<T> = Box<Future<Item = T, Error = RpcError>>;
 
-pub struct Client(core::Client);
+pub struct Client(pub protocol::Client);
 
 fn get_edit_params<T: Serialize>(view_id: &str, method: &str, params: Option<T>) -> Value {
     let params_value = if let Some(params) = params {

@@ -13,14 +13,18 @@ extern crate serde;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+extern crate tokio_core;
 extern crate tokio_io;
+extern crate tokio_process;
 
-mod core;
+mod protocol;
 mod client;
 mod errors;
 mod structs;
 mod frontend;
+mod core;
 
 pub use frontend::Frontend;
 pub use client::{Client, RpcResult};
 pub use errors::RpcError;
+pub use core::spawn;

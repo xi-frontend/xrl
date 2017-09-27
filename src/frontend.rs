@@ -1,5 +1,5 @@
 use errors::RpcError;
-use core::Service;
+use protocol::Service;
 use futures::{future, Future};
 use serde_json::{from_value, to_value, Value};
 use structs::{Position, Style, Update};
