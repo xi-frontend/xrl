@@ -3,7 +3,7 @@ use serde_json::{from_reader, to_vec, Value};
 
 use super::errors::*;
 
-#[derive(Serialize, PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Message {
     Request(Request),
     Response(Response),
@@ -50,7 +50,15 @@ impl Message {
         // fail, or if T contains a map with non-string keys.
         //
         // This should not be the case here, so I think it's safe to unwrap.
-        to_vec(self).expect("Message serialization failed")
+        match *self {
+            Message::Request(ref request) => to_vec(request).expect("Request serialization failed"),
+            Message::Response(ref response) => {
+                to_vec(response).expect("Response serialization failed")
+            }
+            Message::Notification(ref notification) => {
+                to_vec(notification).expect("Notification serialization failed")
+            }
+        }
     }
 }
 

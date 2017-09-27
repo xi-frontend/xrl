@@ -1,5 +1,5 @@
 use std::io;
-use bytes::BytesMut;
+use bytes::{BufMut, BytesMut};
 use tokio_io::codec::{Decoder, Encoder};
 
 use super::errors::DecodeError;
@@ -11,30 +11,20 @@ impl Decoder for Codec {
     type Item = Message;
     type Error = io::Error;
 
-    fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<Self::Item>> {
-        let res: Result<Option<Self::Item>, Self::Error>;
-        let position = {
-            let mut buf = io::Cursor::new(&src);
-            loop {
-                match Message::decode(&mut buf) {
-                    Ok(message) => {
-                        res = Ok(Some(message));
-                        break;
-                    }
-                    Err(err) => match err {
-                        DecodeError::Truncated => return Ok(None),
-                        DecodeError::InvalidJson | DecodeError::InvalidMessage => continue,
-                        DecodeError::Io(err) => {
-                            res = Err(err);
-                            break;
-                        }
-                    },
-                }
+    fn decode(&mut self, buf: &mut BytesMut) -> io::Result<Option<Self::Item>> {
+        if let Some(n) = buf.as_ref().iter().position(|b| *b == b'\n') {
+            let line = buf.split_to(n);
+            buf.split_to(1); // remove the '\n'
+
+            match Message::decode(&mut io::Cursor::new(&line)) {
+                Ok(message) => return Ok(Some(message)),
+                Err(err) => match err {
+                    DecodeError::Io(err) => return Err(err),
+                    _ => return Ok(None),
+                },
             }
-            buf.position() as usize
-        };
-        let _ = src.split_to(position);
-        res
+        }
+        Ok(None)
     }
 }
 
@@ -44,7 +34,9 @@ impl Encoder for Codec {
 
     fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
         let bytes = msg.to_vec();
-        buf.extend_from_slice(&bytes);
+        buf.reserve(bytes.len() + 1);
+        buf.put_slice(&bytes);
+        buf.put(b'\n');
         Ok(())
     }
 }
