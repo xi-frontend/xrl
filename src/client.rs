@@ -31,7 +31,7 @@ impl Client {
         Box::new(
             self.0
                 .notify(method, params)
-                .map_err(|()| RpcError::NotificationNotSent),
+                .map_err(|core_error| RpcError::NotifyFailed),
         )
     }
 
@@ -40,9 +40,7 @@ impl Client {
             |response| match response {
                 Ok(Ok(value)) => Ok(value),
                 Ok(Err(value)) => Err(RpcError::RequestError(value)),
-                // FIXME: we should be able to provide a better error than this and know what
-                // went wrong, but that needs to be fixed in the core
-                Err(()) => Err(RpcError::UnknownRequestError),
+                Err(core_error) => Err(RpcError::RequestFailed),
             },
         ))
     }
