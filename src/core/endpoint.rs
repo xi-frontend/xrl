@@ -22,13 +22,13 @@ pub trait Service {
     fn handle_request(
         &mut self,
         method: &str,
-        params: &Value,
+        params: Value,
     ) -> Box<Future<Item = Result<Self::T, Self::E>, Error = Self::Error>>;
 
     fn handle_notification(
         &mut self,
         method: &str,
-        params: &Value,
+        params: Value,
     ) -> Box<Future<Item = (), Error = Self::Error>>;
 }
 
@@ -94,14 +94,14 @@ impl<S: Service> Server<S> {
     fn process_request(&mut self, request: Request) {
         let method = request.method.as_str();
         let params = request.params;
-        let response = self.service.handle_request(method, &params);
+        let response = self.service.handle_request(method, params);
         self.request_tasks.insert(request.id, response);
     }
 
     fn process_notification(&mut self, notification: Notification) {
         let method = notification.method.as_str();
         let params = notification.params;
-        let task = self.service.handle_notification(method, &params);
+        let task = self.service.handle_notification(method, params);
         self.notification_tasks.push(task);
     }
 }
