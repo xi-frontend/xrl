@@ -11,29 +11,35 @@ pub struct Update {
 #[test]
 fn deserialize_update() {
     use serde_json;
+
+    use super::Line;
+    use super::operation::{OperationType, Operation};
+
     let s = r#"{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true}"#;
     let update = Update {
         operations: vec![
             Operation {
                 operation_type: OperationType::Invalidate,
                 nb_lines: 60,
-                lines: None,
+                lines: vec![],
             },
             Operation {
                 operation_type: OperationType::Insert,
                 nb_lines: 12,
-                lines: Some(vec![
+                lines: vec![
                     Line {
-                        cursor: Some(vec![0]),
-                        styles: Some(vec![]),
-                        text: Some("Bar".to_owned()),
+                        cursor: vec![0],
+                        styles: vec![],
+                        text: "Bar".to_owned(),
+                        is_valid: true,
                     },
                     Line {
-                        cursor: None,
-                        styles: Some(vec![]),
-                        text: Some("Foo".to_owned()),
+                        cursor: vec![],
+                        styles: vec![],
+                        text: "Foo".to_owned(),
+                        is_valid: true,
                     },
-                ]),
+                ],
             },
         ],
         pristine: true,

@@ -18,7 +18,7 @@ pub struct Operation {
     #[serde(deserialize_with = "deserialize_operation_type")]
     pub operation_type: OperationType,
     #[serde(rename = "n")] pub nb_lines: u64,
-    pub lines: Option<Vec<Line>>,
+    #[serde(default)] pub lines: Vec<Line>,
 }
 
 fn deserialize_operation_type<'de, D>(de: D) -> ::std::result::Result<OperationType, D::Error>
@@ -46,7 +46,7 @@ fn deserialize_operation_from_value() {
     let operation = Operation {
         operation_type: OperationType::Insert,
         nb_lines: 12,
-        lines: None,
+        lines: vec![],
     };
     let deserialized: Result<Operation, _> = serde_json::from_value(value);
     assert_eq!(deserialized.unwrap(), operation);
@@ -55,18 +55,20 @@ fn deserialize_operation_from_value() {
     let operation = Operation {
         operation_type: OperationType::Invalidate,
         nb_lines: 60,
-        lines: Some(vec![
+        lines: vec![
             Line {
-                cursor: Some(vec![0]),
-                styles: Some(vec![]),
-                text: Some("foo".to_owned()),
+                cursor: vec![0],
+                styles: vec![],
+                text: "foo".to_owned(),
+                is_valid: true,
             },
             Line {
-                cursor: None,
-                styles: Some(vec![]),
-                text: Some("".to_owned()),
+                cursor: vec![],
+                styles: vec![],
+                text: "".to_owned(),
+                is_valid: true,
             },
-        ]),
+        ],
     };
     let deserialized: Result<Operation, _> = serde_json::from_value(value);
     assert_eq!(deserialized.unwrap(), operation);
@@ -80,7 +82,7 @@ fn deserialize_operation() {
     let operation = Operation {
         operation_type: OperationType::Insert,
         nb_lines: 12,
-        lines: None,
+        lines: vec![],
     };
     let deserialized: Result<Operation, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), operation);
@@ -90,18 +92,20 @@ fn deserialize_operation() {
     let operation = Operation {
         operation_type: OperationType::Invalidate,
         nb_lines: 60,
-        lines: Some(vec![
+        lines: vec![
             Line {
-                cursor: Some(vec![0]),
-                styles: Some(vec![]),
-                text: Some("foo".to_owned()),
+                cursor: vec![0],
+                styles: vec![],
+                text: "foo".to_owned(),
+                is_valid: true,
             },
             Line {
-                cursor: None,
-                styles: Some(vec![]),
-                text: Some("".to_owned()),
+                cursor: vec![],
+                styles: vec![],
+                text: "".to_owned(),
+                is_valid: true,
             },
-        ]),
+        ],
     };
     let deserialized: Result<Operation, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), operation);
