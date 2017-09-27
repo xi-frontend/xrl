@@ -13,7 +13,7 @@ fn deserialize_update() {
     use serde_json;
 
     use super::Line;
-    use super::operation::{OperationType, Operation};
+    use super::operation::{Operation, OperationType};
 
     let s = r#"{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true}"#;
     let update = Update {

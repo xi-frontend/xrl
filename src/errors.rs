@@ -10,7 +10,6 @@ pub enum RpcError {
 
     // FIXME: we should be able to provide a better error than this and know what went wrong, but
     // that needs to be fixed in the core
-
     /// Failure to send a request or to receive a response
     RequestFailed,
 
@@ -34,9 +33,7 @@ impl fmt::Display for RpcError {
             RpcError::RequestError(ref value) => {
                 write!(f, "The core returned an error: {:?}", value)
             }
-            RpcError::InvalidParameters => {
-                write!(f, "Invalid parameters")
-            }
+            RpcError::InvalidParameters => write!(f, "Invalid parameters"),
             RpcError::Serde(ref e) => {
                 write!(f, "failed to (de)serialize a message: {}", e.description())
             }

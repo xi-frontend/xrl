@@ -1,4 +1,4 @@
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Position(pub u64, pub u64);

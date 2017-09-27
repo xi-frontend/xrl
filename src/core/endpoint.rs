@@ -127,7 +127,9 @@ impl Future for Response {
     type Error = RpcError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.0.poll().map_err(|oneshot::Canceled| RpcError::ResponseCanceled)
+        self.0
+            .poll()
+            .map_err(|oneshot::Canceled| RpcError::ResponseCanceled)
     }
 }
 
@@ -136,7 +138,9 @@ impl Future for Ack {
     type Error = RpcError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.0.poll().map_err(|oneshot::Canceled| RpcError::AckCanceled)
+        self.0
+            .poll()
+            .map_err(|oneshot::Canceled| RpcError::AckCanceled)
     }
 }
 

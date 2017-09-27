@@ -1,8 +1,8 @@
 use errors::RpcError;
 use core::Service;
 use futures::{future, Future};
-use serde_json::{Value, to_value, from_value};
-use structs::{Update, Style, Position};
+use serde_json::{from_value, to_value, Value};
+use structs::{Position, Style, Update};
 
 
 pub trait Frontend {
@@ -16,33 +16,35 @@ impl<F: Frontend> Service for F {
     type E = Value;
     type Error = RpcError;
 
-    fn handle_request(&mut self, method: &str, params: Value) -> Box<Future<Item = Result<Self::T, Self::E>, Error = Self::Error>> {
+    fn handle_request(
+        &mut self,
+        method: &str,
+        params: Value,
+    ) -> Box<Future<Item = Result<Self::T, Self::E>, Error = Self::Error>> {
         // AFAIK the core does not send any request to frontends yet
         // We should return an RpcError here
         unimplemented!();
     }
 
-    fn handle_notification(&mut self, method: &str, params: Value) -> Box<Future<Item = (), Error = Self::Error>> {
+    fn handle_notification(
+        &mut self,
+        method: &str,
+        params: Value,
+    ) -> Box<Future<Item = (), Error = Self::Error>> {
         match method {
-            "update" => {
-                match from_value::<Update>(params) {
-                    Ok(update) => self.update(update),
-                    Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
-                }
-            }
-            "scroll_to" => {
-                match from_value::<Position>(params) {
-                    Ok(position) => self.scroll_to(position.0, position.1),
-                    Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
-                }
-            }
-            "set_style" => {
-                match from_value::<Style>(params) {
-                    Ok(style) => self.set_style(style),
-                    Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
-                }
-            }
-            _ =>  {
+            "update" => match from_value::<Update>(params) {
+                Ok(update) => self.update(update),
+                Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
+            },
+            "scroll_to" => match from_value::<Position>(params) {
+                Ok(position) => self.scroll_to(position.0, position.1),
+                Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
+            },
+            "set_style" => match from_value::<Style>(params) {
+                Ok(style) => self.set_style(style),
+                Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
+            },
+            _ => {
                 unimplemented!();
             }
         }

@@ -184,7 +184,7 @@ impl Client {
     }
 
     pub fn close_view(&mut self, view_id: &str) -> RpcResult<()> {
-        self.notify("close_view", json!({ "view_id": view_id}))
+        self.notify("close_view", json!({ "view_id": view_id }))
     }
 
     pub fn save(&mut self, view_id: &str, file_path: &str) -> RpcResult<()> {
