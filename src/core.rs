@@ -49,7 +49,7 @@ pub fn spawn<S: Service>(executable: &str, server: S, handle: &Handle) -> Client
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
         .env("RUST_BACKTRACE", "1")
-        .spawn_async(&handle)
+        .spawn_async(handle)
         .expect("failed to spawn xi-core");
 
     let stdout = xi_core.stdout().take().unwrap();

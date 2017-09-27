@@ -1,7 +1,7 @@
 use errors::RpcError;
 use protocol::Service;
 use futures::{future, Future};
-use serde_json::{from_value, to_value, Value};
+use serde_json::{from_value, Value};
 use structs::{Position, Style, Update};
 
 
@@ -18,8 +18,8 @@ impl<F: Frontend> Service for F {
 
     fn handle_request(
         &mut self,
-        method: &str,
-        params: Value,
+        _method: &str,
+        _params: Value,
     ) -> Box<Future<Item = Result<Self::T, Self::E>, Error = Self::Error>> {
         // AFAIK the core does not send any request to frontends yet
         // We should return an RpcError here

@@ -31,7 +31,7 @@ impl Client {
         Box::new(
             self.0
                 .notify(method, params)
-                .map_err(|core_error| RpcError::NotifyFailed),
+                .map_err(|_| RpcError::NotifyFailed),
         )
     }
 
@@ -40,7 +40,7 @@ impl Client {
             |response| match response {
                 Ok(Ok(value)) => Ok(value),
                 Ok(Err(value)) => Err(RpcError::RequestError(value)),
-                Err(core_error) => Err(RpcError::RequestFailed),
+                Err(_) => Err(RpcError::RequestFailed),
             },
         ))
     }
