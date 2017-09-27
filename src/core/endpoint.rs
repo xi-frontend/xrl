@@ -12,6 +12,7 @@ use serde_json::Value;
 use super::message::{Message, Notification, Request};
 use super::message::Response as ResponseMessage;
 use super::codec::Codec;
+use super::errors::RpcError;
 
 pub trait Service {
     type Error: Error;
@@ -50,9 +51,13 @@ impl<S: Service> Server<S> {
         trace!("Polling pending notification tasks");
         let mut done = vec![];
         for (idx, task) in self.notification_tasks.iter_mut().enumerate() {
-            match task.poll().unwrap() {
-                Async::Ready(_) => done.push(idx),
-                Async::NotReady => continue,
+            match task.poll() {
+                Ok(Async::Ready(_)) => done.push(idx),
+                Ok(Async::NotReady) => continue,
+                Err(e) => {
+                    done.push(idx);
+                    error!("Failed to handle notification: {}", e.description());
+                }
             }
         }
         for idx in done.iter().rev() {
@@ -64,8 +69,8 @@ impl<S: Service> Server<S> {
         trace!("Polling pending requests");
         let mut done = vec![];
         for (id, task) in &mut self.request_tasks {
-            match task.poll().unwrap() {
-                Async::Ready(response) => {
+            match task.poll() {
+                Ok(Async::Ready(response)) => {
                     let msg = Message::Response(ResponseMessage {
                         id: *id,
                         result: response.map(|v| v.into()).map_err(|e| e.into()),
@@ -73,7 +78,11 @@ impl<S: Service> Server<S> {
                     done.push(*id);
                     stream.send(msg);
                 }
-                Async::NotReady => continue,
+                Ok(Async::NotReady) => continue,
+                Err(e) => {
+                    done.push(*id);
+                    error!("Failed to handle request: {}", e);
+                }
             }
         }
 
@@ -115,19 +124,19 @@ type NotificationRx = mpsc::UnboundedReceiver<(Notification, AckTx)>;
 
 impl Future for Response {
     type Item = Result<Value, Value>;
-    type Error = ();
+    type Error = RpcError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.0.poll().map_err(|_| ())
+        self.0.poll().map_err(|oneshot::Canceled| RpcError::ResponseCanceled)
     }
 }
 
 impl Future for Ack {
     type Item = ();
-    type Error = ();
+    type Error = RpcError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.0.poll().map_err(|_| ())
+        self.0.poll().map_err(|oneshot::Canceled| RpcError::AckCanceled)
     }
 }
 
@@ -353,7 +362,7 @@ where
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         trace!("Polling stream.");
-        match self.stream.get_mut().poll().unwrap() {
+        match self.stream.get_mut().poll()? {
             Async::Ready(Some(msg)) => self.handle_message(msg),
             Async::Ready(None) => {
                 trace!("Stream closed by remote peer.");

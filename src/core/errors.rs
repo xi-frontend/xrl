@@ -48,3 +48,8 @@ impl From<SerdeError> for DecodeError {
         }
     }
 }
+
+pub enum RpcError {
+    ResponseCanceled,
+    AckCanceled,
+}
