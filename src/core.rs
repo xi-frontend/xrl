@@ -1,4 +1,4 @@
-use futures::Poll;
+use futures::{Future, Poll};
 use protocol::{Endpoint, Service};
 use client::Client;
 use std::io::{self, Read, Write};
@@ -43,7 +43,7 @@ impl AsyncWrite for Core {
     }
 }
 
-pub fn spawn<S: Service>(executable: &str, server: S, handle: &Handle) -> Client {
+pub fn spawn<S: Service + 'static>(executable: &str, server: S, handle: &Handle) -> Client {
     let mut xi_core = Command::new(executable)
         .stdout(Stdio::piped())
         .stdin(Stdio::piped())
@@ -59,7 +59,10 @@ pub fn spawn<S: Service>(executable: &str, server: S, handle: &Handle) -> Client
         stdout: stdout,
         stdin: stdin,
     };
+
     let mut endpoint = Endpoint::new(core);
     endpoint.set_server(server);
-    Client(endpoint.set_client())
+    let client = Client(endpoint.set_client());
+    handle.spawn(endpoint.map_err(|_| ()));
+    client
 }

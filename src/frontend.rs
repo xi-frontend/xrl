@@ -3,12 +3,13 @@ use protocol::Service;
 use futures::{future, Future};
 use serde_json::{from_value, Value};
 use structs::{Position, Style, Update};
+use client::RpcResult;
 
 
 pub trait Frontend {
-    fn update(&mut self, update: Update) -> Box<Future<Item = (), Error = RpcError>>;
-    fn scroll_to(&mut self, line: u64, column: u64) -> Box<Future<Item = (), Error = RpcError>>;
-    fn set_style(&mut self, style: Style) -> Box<Future<Item = (), Error = RpcError>>;
+    fn update(&mut self, update: Update) -> RpcResult<()>;
+    fn scroll_to(&mut self, line: u64, column: u64) -> RpcResult<()>;
+    fn set_style(&mut self, style: Style) -> RpcResult<()>;
 }
 
 impl<F: Frontend> Service for F {
@@ -45,7 +46,12 @@ impl<F: Frontend> Service for F {
                 Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
             },
             _ => {
-                unimplemented!();
+                error!(
+                    "Cannot handle notification. method={}, params={:?}",
+                    method,
+                    params
+                );
+                Box::new(future::err(RpcError::InvalidParameters))
             }
         }
     }
