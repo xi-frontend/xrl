@@ -24,8 +24,8 @@ mod structs;
 mod frontend;
 mod core;
 
-pub use frontend::Frontend;
-pub use client::{Client, RpcResult};
-pub use errors::RpcError;
+pub use frontend::{Frontend, ServerResult};
+pub use client::{Client, ClientResult};
+pub use errors::{ClientError, ServerError};
 pub use core::spawn;
-pub use structs::{Line, Operation, OperationType, Style, Update, ScrollTo};
+pub use structs::{Line, Operation, OperationType, ScrollTo, Style, Update};
