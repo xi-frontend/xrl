@@ -6,6 +6,8 @@ pub struct Update {
     #[serde(rename = "ops")]
     pub operations: Vec<Operation>,
     pub pristine: bool,
+    #[serde(rename = "view-id")]
+    pub view_id: String,
 }
 
 
@@ -16,7 +18,7 @@ fn deserialize_update() {
     use super::Line;
     use super::operation::{Operation, OperationType};
 
-    let s = r#"{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true}"#;
+    let s = r#"{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true,"view-id":"view-id-1"}"#;
     let update = Update {
         operations: vec![
             Operation {
@@ -45,6 +47,7 @@ fn deserialize_update() {
         ],
         pristine: true,
         rev: None,
+        view_id: "view-id-1".to_string(),
     };
     let deserialized: Result<Update, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), update);
