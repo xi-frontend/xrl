@@ -4,58 +4,48 @@ use serde_json::Value;
 use serde_json::error::Error as SerdeError;
 
 #[derive(Debug)]
-pub enum RpcError {
-    /// Failure to send a notification
+pub enum ClientError {
+    /// A notification was not sent due to an internal error.
     NotifyFailed,
-
-    // FIXME: we should be able to provide a better error than this and know what went wrong, but
-    // that needs to be fixed in the core
-    /// Failure to send a request or to receive a response
+    /// A request failed due to an internal error.
     RequestFailed,
 
-    InvalidParameters,
+    /// A request or a notification could not be sent due to a serialization error.
+    SerializeFailed(SerdeError),
 
-    /// Error while serializing or deserializing a message
-    Serde(SerdeError),
-
-    /// The server returned an error to a request
-    RequestError(Value),
+    /// The server response is an error
+    ErrorReturned(Value),
 }
 
-impl fmt::Display for RpcError {
+impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            RpcError::NotifyFailed => write!(f, "Failed to send notification"),
-            RpcError::RequestFailed => write!(
-                f,
-                "Failed to send a request, or receive a request's response"
-            ),
-            RpcError::RequestError(ref value) => {
+            ClientError::NotifyFailed => write!(f, "Failed to send a notification"),
+            ClientError::RequestFailed => {
+                write!(f, "Failed to send a request, or receive its response")
+            }
+            ClientError::ErrorReturned(ref value) => {
                 write!(f, "The core returned an error: {:?}", value)
             }
-            RpcError::InvalidParameters => write!(f, "Invalid parameters"),
-            RpcError::Serde(ref e) => {
-                write!(f, "failed to (de)serialize a message: {}", e.description())
+            ClientError::SerializeFailed(ref e) => {
+                write!(f, "failed to serialize a message: {}", e)
             }
         }
     }
 }
 
-impl error::Error for RpcError {
+impl error::Error for ClientError {
     fn description(&self) -> &str {
         match *self {
-            RpcError::NotifyFailed => "Failed to send notification",
-            RpcError::RequestFailed => {
-                "Failed to send a request or to receive a request's response"
-            }
-            RpcError::RequestError(_) => "The core answered with an error",
-            RpcError::InvalidParameters => "Invalid parameters",
-            RpcError::Serde(_) => "failed to serialize/deserialize a message",
+            ClientError::NotifyFailed => "Failed to send a notification",
+            ClientError::RequestFailed => "Failed to send a request or receive its response",
+            ClientError::ErrorReturned(_) => "The core answered with an error",
+            ClientError::SerializeFailed(_) => "failed to serialize message",
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
-        if let RpcError::Serde(ref serde_error) = *self {
+        if let ClientError::SerializeFailed(ref serde_error) = *self {
             Some(serde_error)
         } else {
             None
@@ -63,8 +53,8 @@ impl error::Error for RpcError {
     }
 }
 
-impl From<SerdeError> for RpcError {
+impl From<SerdeError> for ClientError {
     fn from(err: SerdeError) -> Self {
-        RpcError::Serde(err)
+        ClientError::SerializeFailed(err)
     }
 }

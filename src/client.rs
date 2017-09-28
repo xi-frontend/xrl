@@ -1,18 +1,21 @@
 use futures::Future;
 use serde_json::Value;
-use errors::RpcError;
+use errors::ClientError;
 use protocol;
 use serde_json::{from_value, to_value};
 use serde::Serialize;
 
-pub type RpcResult<T> = Box<Future<Item = T, Error = RpcError>>;
+pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError>>;
 
 pub struct Client(pub protocol::Client);
 
-fn get_edit_params<T: Serialize>(view_id: &str, method: &str, params: Option<T>) -> Value {
+fn get_edit_params<T: Serialize>(
+    view_id: &str,
+    method: &str,
+    params: Option<T>,
+) -> Result<Value, ClientError> {
     let params_value = if let Some(params) = params {
-        // FIXME: handle this
-        to_value(params).unwrap()
+        to_value(params)?
     } else {
         json!([])
     };
@@ -27,20 +30,20 @@ fn get_edit_params<T: Serialize>(view_id: &str, method: &str, params: Option<T>)
 
 impl Client {
     /// Send a notification to the core
-    pub fn notify(&mut self, method: &str, params: Value) -> RpcResult<()> {
+    pub fn notify(&mut self, method: &str, params: Value) -> ClientResult<()> {
         Box::new(
             self.0
                 .notify(method, params)
-                .map_err(|_| RpcError::NotifyFailed),
+                .map_err(|_| ClientError::NotifyFailed),
         )
     }
 
-    pub fn request(&mut self, method: &str, params: Value) -> RpcResult<Value> {
+    pub fn request(&mut self, method: &str, params: Value) -> ClientResult<Value> {
         Box::new(self.0.request(method, params).then(
             |response| match response {
                 Ok(Ok(value)) => Ok(value),
-                Ok(Err(value)) => Err(RpcError::RequestError(value)),
-                Err(_) => Err(RpcError::RequestFailed),
+                Ok(Err(value)) => Err(ClientError::ErrorReturned(value)),
+                Err(_) => Err(ClientError::RequestFailed),
             },
         ))
     }
@@ -52,19 +55,19 @@ impl Client {
         view_id: &str,
         method: &str,
         params: Option<T>,
-    ) -> RpcResult<()> {
+    ) -> ClientResult<()> {
         self.notify("edit", get_edit_params(view_id, method, params))
     }
 
-    pub fn scroll(&mut self, view_id: &str, first_line: u64, last_line: u64) -> RpcResult<()> {
+    pub fn scroll(&mut self, view_id: &str, first_line: u64, last_line: u64) -> ClientResult<()> {
         self.edit(view_id, "scroll", Some(json!([first_line, last_line])))
     }
 
-    pub fn left(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn left(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "move_left", None as Option<Value>)
     }
 
-    pub fn left_sel(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn left_sel(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(
             view_id,
             "move_left_and_modify_selection",
@@ -72,11 +75,11 @@ impl Client {
         )
     }
 
-    pub fn right(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn right(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "move_right", None as Option<Value>)
     }
 
-    pub fn right_sel(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn right_sel(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(
             view_id,
             "move_right_and_modify_selection",
@@ -84,11 +87,11 @@ impl Client {
         )
     }
 
-    pub fn up(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn up(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "move_up", None as Option<Value>)
     }
 
-    pub fn up_sel(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn up_sel(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(
             view_id,
             "move_up_and_modify_selection",
@@ -96,11 +99,11 @@ impl Client {
         )
     }
 
-    pub fn down(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn down(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "move_down", None as Option<Value>)
     }
 
-    pub fn down_sel(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn down_sel(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(
             view_id,
             "move_down_and_modify_selection",
@@ -108,15 +111,15 @@ impl Client {
         )
     }
 
-    pub fn del(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn del(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "delete_backward", None as Option<Value>)
     }
 
-    pub fn page_up(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn page_up(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "page_up", None as Option<Value>)
     }
 
-    pub fn page_up_sel(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn page_up_sel(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(
             view_id,
             "page_up_and_modify_selection",
@@ -124,11 +127,11 @@ impl Client {
         )
     }
 
-    pub fn page_down(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn page_down(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "page_down", None as Option<Value>)
     }
 
-    pub fn page_down_sel(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn page_down_sel(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(
             view_id,
             "page_down_and_modify_selection",
@@ -136,30 +139,30 @@ impl Client {
         )
     }
 
-    pub fn insert_newline(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn insert_newline(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "insert_newline", None as Option<Value>)
     }
 
-    pub fn f1(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn f1(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "debug_rewrap", None as Option<Value>)
     }
 
-    pub fn f2(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn f2(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(view_id, "debug_test_fg_spans", None as Option<Value>)
     }
 
-    pub fn char(&mut self, view_id: &str, ch: char) -> RpcResult<()> {
+    pub fn char(&mut self, view_id: &str, ch: char) -> ClientResult<()> {
         self.edit(view_id, "insert", Some(json!({ "chars": ch })))
     }
 
     // FIXME: handle modifier and click count
-    pub fn click(&mut self, view_id: &str, line: u64, column: u64) -> RpcResult<()> {
+    pub fn click(&mut self, view_id: &str, line: u64, column: u64) -> ClientResult<()> {
         self.edit(view_id, "click", Some(json!([line, column, 0, 1])))
     }
 
     /// Implements dragging (extending a selection). Arguments are line, column, and flag as in click.
     /// [Xi documentation](https://github.com/google/xi-editor/blob/c215deea8c2dfced91a9e019e1febdc8ce68158e/doc/frontend.md#drag)
-    pub fn drag(&mut self, view_id: &str, line: u64, column: u64) -> RpcResult<()> {
+    pub fn drag(&mut self, view_id: &str, line: u64, column: u64) -> ClientResult<()> {
         self.edit(view_id, "drag", Some(json!([line, column, 0])))
     }
 
@@ -172,7 +175,7 @@ impl Client {
     /// agent than a front-end in direct control should be done with extreme caution.
     ///
     /// [Xi documentation](https://github.com/google/xi-editor/blob/c215deea8c2dfced91a9e019e1febdc8ce68158e/doc/frontend.md#new_view)
-    pub fn new_view(&mut self, file_path: Option<String>) -> RpcResult<String> {
+    pub fn new_view(&mut self, file_path: Option<String>) -> ClientResult<String> {
         let params = if let Some(file_path) = file_path {
             json!({ "file_path": file_path })
         } else {
@@ -183,11 +186,11 @@ impl Client {
         Box::new(result)
     }
 
-    pub fn close_view(&mut self, view_id: &str) -> RpcResult<()> {
+    pub fn close_view(&mut self, view_id: &str) -> ClientResult<()> {
         self.notify("close_view", json!({ "view_id": view_id }))
     }
 
-    pub fn save(&mut self, view_id: &str, file_path: &str) -> RpcResult<()> {
+    pub fn save(&mut self, view_id: &str, file_path: &str) -> ClientResult<()> {
         let params = json!({"view_id": view_id, "file_path": file_path});
         Box::new(self.request("save", params).and_then(|_| Ok(())))
     }
