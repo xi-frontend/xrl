@@ -1,5 +1,5 @@
 use std::fmt;
-use std::error::{self, Error};
+use std::error;
 use serde_json::Value;
 use serde_json::error::Error as SerdeError;
 
@@ -56,5 +56,48 @@ impl error::Error for ClientError {
 impl From<SerdeError> for ClientError {
     fn from(err: SerdeError) -> Self {
         ClientError::SerializeFailed(err)
+    }
+}
+
+#[derive(Debug)]
+pub enum ServerError {
+    UnknownMethod(String),
+    DeserializeFailed(SerdeError),
+}
+
+impl fmt::Display for ServerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ServerError::UnknownMethod(ref method) => write!(f, "Unkown method {}", method),
+            ServerError::DeserializeFailed(ref e) => write!(
+                f,
+                "Failed to deserialize the parameters of a request or notification: {}",
+                e
+            ),
+        }
+    }
+}
+
+impl error::Error for ServerError {
+    fn description(&self) -> &str {
+        match *self {
+            ServerError::UnknownMethod(_) => "Unkown method",
+            ServerError::DeserializeFailed(_) => {
+                "Failed to deserialize the parameters of a request or notification"
+            }
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        if let ServerError::DeserializeFailed(ref serde_error) = *self {
+            Some(serde_error)
+        } else {
+            None
+        }
+    }
+}
+impl From<SerdeError> for ServerError {
+    fn from(err: SerdeError) -> Self {
+        ServerError::DeserializeFailed(err)
     }
 }
