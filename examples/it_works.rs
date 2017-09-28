@@ -5,7 +5,7 @@ extern crate xi_rpc_tokio;
 
 use futures::{future, Future};
 use tokio_core::reactor::Core;
-use xi_rpc_tokio::{spawn, Frontend, RpcResult, Style, Update};
+use xi_rpc_tokio::{spawn, Frontend, ScrollTo, ServerResult, Style, Update};
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -13,16 +13,13 @@ use std::time::Duration;
 struct TestFrontend;
 
 impl Frontend for TestFrontend {
-    fn update(&mut self, update: Update) -> RpcResult<()> {
-        println!("Got update from core: {:?}", update);
+    fn update(&mut self, update: Update) -> ServerResult<()> {
         Box::new(future::ok(()))
     }
-    fn scroll_to(&mut self, line: u64, column: u64) -> RpcResult<()> {
-        println!("Got scroll_to from core: ({} {})", line, column);
+    fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()> {
         Box::new(future::ok(()))
     }
-    fn set_style(&mut self, style: Style) -> RpcResult<()> {
-        println!("Got set_tyle from core: {:?}", style);
+    fn set_style(&mut self, style: Style) -> ServerResult<()> {
         Box::new(future::ok(()))
     }
 }
