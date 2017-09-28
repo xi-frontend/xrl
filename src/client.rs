@@ -1,4 +1,4 @@
-use futures::Future;
+use futures::{future, Future};
 use serde_json::Value;
 use errors::ClientError;
 use protocol;
@@ -20,11 +20,11 @@ fn get_edit_params<T: Serialize>(
         json!([])
     };
 
-    json!({
+    Ok(json!({
         "method": method,
         "view_id": view_id,
         "params": params_value,
-    })
+    }))
 }
 
 
@@ -56,7 +56,10 @@ impl Client {
         method: &str,
         params: Option<T>,
     ) -> ClientResult<()> {
-        self.notify("edit", get_edit_params(view_id, method, params))
+        match get_edit_params(view_id, method, params) {
+            Ok(value) => self.notify("edit", value),
+            Err(e) => Box::new(future::err(e)),
+        }
     }
 
     pub fn scroll(&mut self, view_id: &str, first_line: u64, last_line: u64) -> ClientResult<()> {
