@@ -1,13 +1,44 @@
+use serde::{Deserialize, Deserializer};
+
 use super::operation::Operation;
 
-#[derive(Deserialize, Debug, PartialEq)]
+
+#[derive(Debug, PartialEq)]
 pub struct Update {
+    pub rev: Option<u64>,
+    pub operations: Vec<Operation>,
+    pub pristine: bool,
+    pub view_id: String,
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
+struct InnerUpdate {
     pub rev: Option<u64>,
     #[serde(rename = "ops")]
     pub operations: Vec<Operation>,
     pub pristine: bool,
-    #[serde(rename = "view-id")]
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
+struct UpdateHelper {
+    pub update: InnerUpdate,
     pub view_id: String,
+}
+
+impl<'de> Deserialize<'de> for Update {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Deserialize::deserialize(deserializer).map(|UpdateHelper { update, view_id }| {
+            Update {
+                rev: update.rev,
+                operations: update.operations,
+                pristine: update.pristine,
+                view_id: view_id,
+            }
+        })
+    }
 }
 
 
@@ -18,7 +49,7 @@ fn deserialize_update() {
     use super::Line;
     use super::operation::{Operation, OperationType};
 
-    let s = r#"{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true,"view-id":"view-id-1"}"#;
+    let s = r#"{"update":{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true},"view_id":"view-id-1"}"#;
     let update = Update {
         operations: vec![
             Operation {

@@ -2,13 +2,13 @@ use errors::RpcError;
 use protocol::Service;
 use futures::{future, Future};
 use serde_json::{from_value, Value};
-use structs::{Position, Style, Update};
+use structs::{ScrollTo, Style, Update};
 use client::RpcResult;
 
 
 pub trait Frontend {
     fn update(&mut self, update: Update) -> RpcResult<()>;
-    fn scroll_to(&mut self, line: u64, column: u64) -> RpcResult<()>;
+    fn scroll_to(&mut self, scroll_to: ScrollTo) -> RpcResult<()>;
     fn set_style(&mut self, style: Style) -> RpcResult<()>;
 }
 
@@ -37,8 +37,8 @@ impl<F: Frontend> Service for F {
                 Ok(update) => self.update(update),
                 Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
             },
-            "scroll_to" => match from_value::<Position>(params) {
-                Ok(position) => self.scroll_to(position.0, position.1),
+            "scroll_to" => match from_value::<ScrollTo>(params) {
+                Ok(scroll_to) => self.scroll_to(scroll_to),
                 Err(_) => Box::new(future::err(RpcError::InvalidParameters)),
             },
             "set_style" => match from_value::<Style>(params) {

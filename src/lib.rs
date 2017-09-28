@@ -28,4 +28,4 @@ pub use frontend::Frontend;
 pub use client::{Client, RpcResult};
 pub use errors::RpcError;
 pub use core::spawn;
-pub use structs::{Line, Operation, OperationType, Style, Update};
+pub use structs::{Line, Operation, OperationType, Style, Update, ScrollTo};
