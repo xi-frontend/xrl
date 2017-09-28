@@ -56,7 +56,7 @@ impl<S: Service> Server<S> {
                 Ok(Async::NotReady) => continue,
                 Err(e) => {
                     done.push(idx);
-                    error!("Failed to handle notification: {}", e.description());
+                    error!("Failed to handle notification: {}", e);
                 }
             }
         }
