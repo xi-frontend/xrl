@@ -2,13 +2,15 @@
 extern crate env_logger;
 extern crate futures;
 extern crate tokio_core;
-extern crate xi_rpc_tokio;
+extern crate xrl;
+
+use std::thread::sleep;
+use std::time::Duration;
 
 use futures::{future, Future};
 use tokio_core::reactor::Core;
-use xi_rpc_tokio::{spawn, Client, Frontend, FrontendBuilder, ScrollTo, ServerResult, Style, Update};
-use std::thread::sleep;
-use std::time::Duration;
+
+use xrl::{spawn, Client, Frontend, FrontendBuilder, ScrollTo, ServerResult, Style, Update};
 
 
 struct TestFrontend;
