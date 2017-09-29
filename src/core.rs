@@ -1,5 +1,5 @@
 use futures::{Future, Poll};
-use protocol::{Endpoint, Service};
+use protocol::Endpoint;
 use client::Client;
 use std::io::{self, Read, Write};
 use std::process::Command;
@@ -7,8 +7,11 @@ use std::process::Stdio;
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_process::{Child, ChildStdin, ChildStdout, CommandExt};
 use tokio_core::reactor::Handle;
+use frontend::{Frontend, FrontendBuilder};
+use std::clone::Clone;
 
 struct Core {
+    #[allow(dead_code)]
     core: Child,
     stdout: ChildStdout,
     stdin: ChildStdin,
@@ -43,7 +46,11 @@ impl AsyncWrite for Core {
     }
 }
 
-pub fn spawn<S: Service + 'static>(executable: &str, server: S, handle: &Handle) -> Client {
+pub fn spawn<B, F>(executable: &str, builder: B, handle: &Handle) -> Client
+where
+    B: FrontendBuilder<F> + 'static,
+    F: Frontend + 'static,
+{
     let mut xi_core = Command::new(executable)
         .stdout(Stdio::piped())
         .stdin(Stdio::piped())
@@ -61,8 +68,9 @@ pub fn spawn<S: Service + 'static>(executable: &str, server: S, handle: &Handle)
     };
 
     let mut endpoint = Endpoint::new(core);
-    endpoint.set_server(server);
     let client = Client(endpoint.set_client());
+    let service = builder.build(client.clone());
+    endpoint.set_server(service);
     handle.spawn(endpoint.map_err(|_| ()));
     client
 }

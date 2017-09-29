@@ -410,7 +410,7 @@ where
 pub trait ServiceBuilder {
     type Service: Service + 'static;
 
-    fn build(&self, client: Client) -> Self::Service;
+    fn build(self, client: Client) -> Self::Service;
 }
 
 #[derive(Clone)]

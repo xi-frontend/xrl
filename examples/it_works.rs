@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 extern crate env_logger;
 extern crate futures;
 extern crate tokio_core;
@@ -5,7 +6,7 @@ extern crate xi_rpc_tokio;
 
 use futures::{future, Future};
 use tokio_core::reactor::Core;
-use xi_rpc_tokio::{spawn, Frontend, ScrollTo, ServerResult, Style, Update};
+use xi_rpc_tokio::{spawn, Client, Frontend, FrontendBuilder, ScrollTo, ServerResult, Style, Update};
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -21,6 +22,12 @@ impl Frontend for TestFrontend {
     }
     fn set_style(&mut self, style: Style) -> ServerResult<()> {
         Box::new(future::ok(()))
+    }
+}
+
+impl FrontendBuilder<TestFrontend> for TestFrontend {
+    fn build(self, _client: Client) -> TestFrontend {
+        self
     }
 }
 

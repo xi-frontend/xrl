@@ -3,6 +3,7 @@ use protocol::Service;
 use futures::{future, Future};
 use serde_json::{from_value, Value};
 use structs::{ScrollTo, Style, Update};
+use client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
 
@@ -10,6 +11,13 @@ pub trait Frontend {
     fn update(&mut self, update: Update) -> ServerResult<()>;
     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()>;
     fn set_style(&mut self, style: Style) -> ServerResult<()>;
+}
+
+pub trait FrontendBuilder<F>
+where
+    F: Frontend,
+{
+    fn build(self, client: Client) -> F;
 }
 
 impl<F: Frontend> Service for F {

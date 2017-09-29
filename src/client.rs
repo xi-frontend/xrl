@@ -7,6 +7,7 @@ use serde::Serialize;
 
 pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError>>;
 
+#[derive(Clone)]
 pub struct Client(pub protocol::Client);
 
 fn get_edit_params<T: Serialize>(
