@@ -16,16 +16,16 @@ struct StyleDefHelper(i64, u64, u64);
 
 impl<'de> Deserialize<'de> for StyleDef {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
-        Deserialize::deserialize(deserializer)
-            .map(|StyleDefHelper(offset, length, style_id)| {
-                StyleDef {
-                    offset: offset,
-                    length: length,
-                    style_id: style_id,
-                }
-            })
+        Deserialize::deserialize(deserializer).map(|StyleDefHelper(offset, length, style_id)| {
+            StyleDef {
+                offset: offset,
+                length: length,
+                style_id: style_id,
+            }
+        })
     }
 }
 
