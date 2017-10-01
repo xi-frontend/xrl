@@ -6,9 +6,9 @@ fn _return_true() -> bool {
 
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct StyleDef {
-    offset: i64,
-    length: u64,
-    style_id: u64,
+    pub offset: i64,
+    pub length: u64,
+    pub style_id: u64,
 }
 
 #[derive(Deserialize)]

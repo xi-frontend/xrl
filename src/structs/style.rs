@@ -12,14 +12,14 @@ fn default_underline() -> bool {
 }
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct Style {
-    id: u64,
-    fg_color: Option<u32>,
+    pub id: u64,
+    pub fg_color: Option<u32>,
     #[serde(default = "default_bg_color")]
-    bg_color: u32,
+    pub bg_color: u32,
     #[serde(default = "default_weight")]
-    weight: u32,
+    pub weight: u32,
     #[serde(default = "default_italic")]
-    italic: bool,
+    pub italic: bool,
     #[serde(default = "default_underline")]
-    underline: bool,
+    pub underline: bool,
 }
