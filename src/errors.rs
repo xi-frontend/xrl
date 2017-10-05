@@ -63,12 +63,14 @@ impl From<SerdeError> for ClientError {
 pub enum ServerError {
     UnknownMethod(String),
     DeserializeFailed(SerdeError),
+    Other(String),
 }
 
 impl fmt::Display for ServerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ServerError::UnknownMethod(ref method) => write!(f, "Unkown method {}", method),
+            ServerError::Other(ref s) => write!(f, "Unkown error: {}", s),
             ServerError::DeserializeFailed(ref e) => write!(
                 f,
                 "Failed to deserialize the parameters of a request or notification: {}",
@@ -82,6 +84,7 @@ impl error::Error for ServerError {
     fn description(&self) -> &str {
         match *self {
             ServerError::UnknownMethod(_) => "Unkown method",
+            ServerError::Other(_) => "Unknown error",
             ServerError::DeserializeFailed(_) => {
                 "Failed to deserialize the parameters of a request or notification"
             }
@@ -96,6 +99,19 @@ impl error::Error for ServerError {
         }
     }
 }
+
+impl From<String> for ServerError {
+    fn from(s: String) -> Self {
+        ServerError::Other(s)
+    }
+}
+
+impl<'a> From<&'a str> for ServerError {
+    fn from(s: &'a str) -> Self {
+        ServerError::Other(s.to_string())
+    }
+}
+
 impl From<SerdeError> for ServerError {
     fn from(err: SerdeError) -> Self {
         ServerError::DeserializeFailed(err)
