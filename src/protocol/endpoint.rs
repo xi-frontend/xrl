@@ -48,7 +48,7 @@ impl<S: Service> Server<S> {
     }
 
     fn poll_notification_tasks(&mut self) {
-        trace!("Polling pending notification tasks");
+        trace!("polling pending notification tasks");
         let mut done = vec![];
         for (idx, task) in self.notification_tasks.iter_mut().enumerate() {
             match task.poll() {
@@ -56,7 +56,7 @@ impl<S: Service> Server<S> {
                 Ok(Async::NotReady) => continue,
                 Err(e) => {
                     done.push(idx);
-                    error!("Failed to handle notification: {}", e);
+                    error!("failed to handle notification: {}", e);
                 }
             }
         }
@@ -66,7 +66,7 @@ impl<S: Service> Server<S> {
     }
 
     fn poll_request_tasks<T: AsyncRead + AsyncWrite>(&mut self, stream: &mut Transport<T>) {
-        trace!("Polling pending requests");
+        trace!("polling pending requests");
         let mut done = vec![];
         for (id, task) in &mut self.request_tasks {
             match task.poll() {
@@ -173,7 +173,7 @@ impl InnerClient {
     }
 
     fn shutdown(&mut self) {
-        trace!("Shutting down inner client");
+        debug!("shutting down inner client");
         self.shutting_down = true;
     }
 
@@ -182,49 +182,50 @@ impl InnerClient {
     }
 
     fn process_notifications<T: AsyncRead + AsyncWrite>(&mut self, stream: &mut Transport<T>) {
-        trace!("Polling client notifications channel");
+        trace!("polling client notifications channel");
         loop {
             match self.notifications_rx.poll() {
                 Ok(Async::Ready(Some((notification, ack_sender)))) => {
-                    trace!("Got notification from client.");
+                    trace!("sending notification: {:?}", notification);
                     stream.send(Message::Notification(notification));
                     self.pending_notifications.push(ack_sender);
                 }
                 Ok(Async::NotReady) => {
-                    trace!("No new notification from client");
+                    trace!("no new notification from client");
                     break;
                 }
                 Ok(Async::Ready(None)) => {
-                    trace!("Client closed the notifications channel.");
+                    warn!("client closed the notifications channel");
                     self.shutdown();
                 }
                 Err(()) => {
                     // I have no idea how this should be handled.
                     // The documentation does not tell what may trigger an error.
-                    panic!("An error occured while polling the notifications channel.")
+                    error!("an error occured while polling the notifications channel");
+                    panic!("an error occured while polling the notifications channel");
                 }
             }
         }
     }
 
     fn process_requests<T: AsyncRead + AsyncWrite>(&mut self, stream: &mut Transport<T>) {
-        trace!("Polling client requests channel");
+        trace!("polling client requests channel");
         loop {
             match self.requests_rx.poll() {
                 Ok(Async::Ready(Some((mut request, response_sender)))) => {
                     self.request_id += 1;
-                    trace!("Got request from client: {:?}", request);
+                    trace!("sending request: {:?}", request);
                     request.id = self.request_id;
                     stream.send(Message::Request(request));
                     self.pending_requests
                         .insert(self.request_id, response_sender);
                 }
                 Ok(Async::Ready(None)) => {
-                    trace!("Client closed the requests channel.");
+                    warn!("client closed the requests channel.");
                     self.shutdown();
                 }
                 Ok(Async::NotReady) => {
-                    trace!("No new request from client");
+                    trace!("no new request from client");
                     break;
                 }
                 Err(()) => {
@@ -241,7 +242,7 @@ impl InnerClient {
             return;
         }
         if let Some(response_tx) = self.pending_requests.remove(&response.id) {
-            trace!("Forwarding response to the client.");
+            trace!("forwarding response to the client.");
             if let Err(e) = response_tx.send(response.result) {
                 warn!("Failed to send response to client: {:?}", e);
             }
@@ -252,7 +253,7 @@ impl InnerClient {
 
     fn acknowledge_notifications(&mut self) {
         for chan in self.pending_notifications.drain(..) {
-            trace!("Acknowledging notification.");
+            trace!("acknowledging notification.");
             if let Err(e) = chan.send(()) {
                 warn!("Failed to send ack to client: {:?}", e);
             }
@@ -273,7 +274,7 @@ where
     T: AsyncRead + AsyncWrite,
 {
     fn send(&mut self, message: Message) {
-        trace!("Sending {:?}", message);
+        debug!("sending message to remote peer: {:?}", message);
         match self.start_send(message) {
             Ok(AsyncSink::Ready) => return,
             // FIXME: there should probably be a retry mechanism.
@@ -335,28 +336,37 @@ where
     }
 
     fn handle_message(&mut self, msg: Message) {
-        trace!("Received {:?}", msg);
+        debug!("handling message from remote peer {:?}", msg);
         match msg {
             Message::Request(request) => if let Some(ref mut server) = self.server {
                 server.get_mut().process_request(request);
             } else {
-                trace!("This endpoint does not handle requests. Ignoring it.");
+                warn!(
+                    "this endpoint does not handle requests => request ignored: {:?}",
+                    request
+                );
             },
             Message::Notification(notification) => if let Some(ref mut server) = self.server {
                 server.get_mut().process_notification(notification);
             } else {
-                trace!("This endpoint does not handle notifications. Ignoring it.");
+                warn!(
+                    "this endpoint does not handle notifications => notification ignored: {:?}",
+                    notification
+                );
             },
             Message::Response(response) => if let Some(ref mut client) = self.client {
                 client.get_mut().process_response(response);
             } else {
-                trace!("This endpoint does not handle responses. Ignoring it.");
+                warn!(
+                    "this endpoint does not handle responses => response ignored: {:?}",
+                    response
+                );
             },
         }
     }
 
     fn flush(&mut self) {
-        trace!("Flushing stream");
+        trace!("flushing stream");
         match self.stream.get_mut().poll_complete() {
             Ok(Async::Ready(())) => if let Some(ref mut client) = self.client {
                 client.get_mut().acknowledge_notifications();
@@ -375,16 +385,16 @@ where
     type Error = io::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        trace!("Polling stream.");
+        trace!("polling stream");
         loop {
             match self.stream.get_mut().poll()? {
                 Async::Ready(Some(msg)) => self.handle_message(msg),
                 Async::Ready(None) => {
-                    trace!("Stream closed by remote peer.");
+                    warn!("stream closed by remote peer.");
                     return Ok(Async::Ready(()));
                 }
                 Async::NotReady => {
-                    trace!("No new message in the stream");
+                    trace!("no new message in the stream");
                     break;
                 }
             }
@@ -403,7 +413,7 @@ where
             client.process_requests(stream);
             client.process_notifications(stream);
             if client.is_shutting_down() {
-                trace!("Client shut down, exiting");
+                warn!("Client shut down, exiting");
                 client_shutdown = true;
             }
         }
@@ -438,7 +448,11 @@ impl Client {
     }
 
     pub fn request(&self, method: &str, params: Value) -> Response {
-        trace!("New request (method={}, params={:?})", method, params);
+        trace!(
+            "forwarding request to endpoint (method={}, params={:?})",
+            method,
+            params
+        );
         let request = Request {
             id: 0,
             method: method.to_owned(),
@@ -454,7 +468,11 @@ impl Client {
     }
 
     pub fn notify(&self, method: &str, params: Value) -> Ack {
-        trace!("New notification (method={}, params={:?})", method, params);
+        trace!(
+            "forwarding notification to endpoint (method={}, params={:?})",
+            method,
+            params
+        );
         let notification = Notification {
             method: method.to_owned(),
             params: params,

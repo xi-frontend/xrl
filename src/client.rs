@@ -32,6 +32,7 @@ fn get_edit_params<T: Serialize>(
 impl Client {
     /// Send a notification to the core
     pub fn notify(&mut self, method: &str, params: Value) -> ClientResult<()> {
+        info!(">>> notification: method={}, params={}", method, &params);
         Box::new(
             self.0
                 .notify(method, params)
@@ -40,6 +41,7 @@ impl Client {
     }
 
     pub fn request(&mut self, method: &str, params: Value) -> ClientResult<Value> {
+        info!(">>> request : method={}, params={}", method, &params);
         Box::new(self.0.request(method, params).then(
             |response| match response {
                 Ok(Ok(value)) => Ok(value),

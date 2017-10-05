@@ -1,13 +1,14 @@
+//! run with
+//! `RUST_LOG=it_works=info,xrl=info cargo run --example it_works`
 #![allow(unused_variables)]
 extern crate env_logger;
 extern crate futures;
+#[macro_use]
+extern crate log;
 extern crate tokio_core;
 extern crate xrl;
 
-use std::thread::sleep;
-use std::time::Duration;
-
-use futures::{future, Future};
+use futures::{future, Future, Stream};
 use tokio_core::reactor::Core;
 
 use xrl::{spawn, Client, Frontend, FrontendBuilder, ScrollTo, ServerResult, Style, Update};
@@ -37,11 +38,18 @@ fn main() {
     env_logger::init().unwrap();
     let mut core = Core::new().unwrap();
     let handle = core.handle();
-    let mut client = spawn("xi-core", TestFrontend {}, &handle);
+    let (mut client, core_stderr) = spawn("xi-core", TestFrontend {}, &handle);
 
-    sleep(Duration::from_millis(1000));
-    let new_view_future = client
+    let log_core_errors = core_stderr
+        .for_each(|msg| {
+            warn!("xi-core stderr: {}", msg);
+            Ok(())
+        })
+        .map_err(|_| ());
+    core.handle().spawn(log_core_errors);
+
+    let open_new_view = client
         .new_view(None)
-        .map(|view_name| println!("{:?}", view_name));
-    core.run(new_view_future).unwrap();
+        .map(|view_name| info!("opened new view: {}", view_name));
+    core.run(open_new_view).unwrap();
 }
