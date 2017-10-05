@@ -1,11 +1,12 @@
-use futures::{Future, Poll};
+use futures::{Future, Poll, Stream};
+use bytes::BytesMut;
 use protocol::Endpoint;
 use client::Client;
 use std::io::{self, Read, Write};
 use std::process::Command;
 use std::process::Stdio;
-use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_process::{Child, ChildStdin, ChildStdout, CommandExt};
+use tokio_io::{codec, AsyncRead, AsyncWrite};
+use tokio_process::{Child, ChildStderr, ChildStdin, ChildStdout, CommandExt};
 use tokio_core::reactor::Handle;
 use frontend::{Frontend, FrontendBuilder};
 use std::clone::Clone;
@@ -46,7 +47,7 @@ impl AsyncWrite for Core {
     }
 }
 
-pub fn spawn<B, F>(executable: &str, builder: B, handle: &Handle) -> Client
+pub fn spawn<B, F>(executable: &str, builder: B, handle: &Handle) -> (Client, CoreStderr)
 where
     B: FrontendBuilder<F> + 'static,
     F: Frontend + 'static,
@@ -61,6 +62,7 @@ where
 
     let stdout = xi_core.stdout().take().unwrap();
     let stdin = xi_core.stdin().take().unwrap();
+    let stderr = xi_core.stderr().take().unwrap();
     let core = Core {
         core: xi_core,
         stdout: stdout,
@@ -72,5 +74,43 @@ where
     let service = builder.build(client.clone());
     endpoint.set_server(service);
     handle.spawn(endpoint.map_err(|_| ()));
-    client
+    (client, CoreStderr::new(stderr))
+}
+
+struct LineCodec;
+
+// straight from
+// https://github.com/tokio-rs/tokio-line/blob/master/simple/src/lib.rs
+impl codec::Decoder for LineCodec {
+    type Item = String;
+    type Error = io::Error;
+
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<String>, io::Error> {
+        if let Some(n) = buf.as_ref().iter().position(|b| *b == b'\n') {
+            let line = buf.split_to(n);
+            buf.split_to(1);
+            return match ::std::str::from_utf8(&line.as_ref()) {
+                Ok(s) => Ok(Some(s.to_string())),
+                Err(_) => Err(io::Error::new(io::ErrorKind::Other, "invalid string")),
+            };
+        }
+        Ok(None)
+    }
+}
+
+pub struct CoreStderr(codec::FramedRead<ChildStderr, LineCodec>);
+
+impl CoreStderr {
+    fn new(stderr: ChildStderr) -> Self {
+        CoreStderr(codec::FramedRead::new(stderr, LineCodec {}))
+    }
+}
+
+impl Stream for CoreStderr {
+    type Item = String;
+    type Error = io::Error;
+
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+        self.0.poll()
+    }
 }
