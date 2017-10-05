@@ -89,7 +89,7 @@ impl codec::Decoder for LineCodec {
         if let Some(n) = buf.as_ref().iter().position(|b| *b == b'\n') {
             let line = buf.split_to(n);
             buf.split_to(1);
-            return match ::std::str::from_utf8(&line.as_ref()) {
+            return match ::std::str::from_utf8(line.as_ref()) {
                 Ok(s) => Ok(Some(s.to_string())),
                 Err(_) => Err(io::Error::new(io::ErrorKind::Other, "invalid string")),
             };
