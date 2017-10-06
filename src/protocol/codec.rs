@@ -14,6 +14,7 @@ impl Decoder for Codec {
     fn decode(&mut self, buf: &mut BytesMut) -> io::Result<Option<Self::Item>> {
         if let Some(n) = buf.as_ref().iter().position(|b| *b == b'\n') {
             let line = buf.split_to(n);
+            trace!("<<< {}", ::std::str::from_utf8(&line).unwrap());
             buf.split_to(1); // remove the '\n'
 
             match Message::decode(&mut io::Cursor::new(&line)) {
@@ -34,6 +35,7 @@ impl Encoder for Codec {
 
     fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
         let bytes = msg.to_vec();
+        trace!(">>> {}", ::std::str::from_utf8(&bytes).unwrap());
         buf.reserve(bytes.len() + 1);
         buf.put_slice(&bytes);
         buf.put(b'\n');
