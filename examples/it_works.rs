@@ -1,55 +1,63 @@
-//! run with
-//! `RUST_LOG=it_works=info,xrl=info cargo run --example it_works`
 #![allow(unused_variables)]
-extern crate env_logger;
 extern crate futures;
-#[macro_use]
-extern crate log;
 extern crate tokio_core;
 extern crate xrl;
 
 use futures::{future, Future, Stream};
 use tokio_core::reactor::Core;
-
 use xrl::{spawn, Client, Frontend, FrontendBuilder, ScrollTo, ServerResult, Style, Update};
 
 
-struct TestFrontend;
+// Type that represent our client
+struct MyFrontend {
+    #[allow(dead_code)]
+    client: Client,
+}
 
-impl Frontend for TestFrontend {
+// Implement how our client handles notifications and requests from the core.
+impl Frontend for MyFrontend {
     fn update(&mut self, update: Update) -> ServerResult<()> {
+        println!("received `update` from Xi core:\n{:?}", update);
+        // note that we could send requests/notifications to the core here with `self.client`
         Box::new(future::ok(()))
     }
     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()> {
+        println!("received `scroll_to` from Xi core:\n{:?}", scroll_to);
         Box::new(future::ok(()))
     }
     fn set_style(&mut self, style: Style) -> ServerResult<()> {
+        println!("received `set_style` from Xi core:\n{:?}", style);
         Box::new(future::ok(()))
     }
 }
 
-impl FrontendBuilder<TestFrontend> for TestFrontend {
-    fn build(self, _client: Client) -> TestFrontend {
-        self
+struct MyFrontendBuilder;
+
+impl FrontendBuilder<MyFrontend> for MyFrontendBuilder {
+    fn build(self, client: Client) -> MyFrontend {
+        MyFrontend { client: client }
     }
 }
 
 fn main() {
-    env_logger::init().unwrap();
     let mut core = Core::new().unwrap();
     let handle = core.handle();
-    let (mut client, core_stderr) = spawn("xi-core", TestFrontend {}, &handle);
 
+    // spawn Xi core
+    let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {}, &handle);
+
+    // start logging Xi core's stderr
     let log_core_errors = core_stderr
         .for_each(|msg| {
-            warn!("xi-core stderr: {}", msg);
+            println!("xi-core stderr: {}", msg);
             Ok(())
         })
         .map_err(|_| ());
     core.handle().spawn(log_core_errors);
 
+    // Send a request to open a new view, and print the result
     let open_new_view = client
         .new_view(None)
-        .map(|view_name| info!("opened new view: {}", view_name));
+        .map(|view_name| println!("opened new view: {}", view_name));
     core.run(open_new_view).unwrap();
 }

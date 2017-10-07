@@ -47,6 +47,7 @@ impl AsyncWrite for Core {
     }
 }
 
+/// Start Xi core, and return a client and a stream of Xi's stderr lines.
 pub fn spawn<B, F>(executable: &str, builder: B, handle: &Handle) -> (Client, CoreStderr)
 where
     B: FrontendBuilder<F> + 'static,
@@ -98,6 +99,7 @@ impl codec::Decoder for LineCodec {
     }
 }
 
+/// A stream of Xi core stderr lines
 pub struct CoreStderr(codec::FramedRead<ChildStderr, LineCodec>);
 
 impl CoreStderr {

@@ -7,12 +7,18 @@ use client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
 
+/// The `Frontend` trait must be implemented by clients. It defines how the client handles
+/// notifications and requests coming from `xi-core`.
 pub trait Frontend {
+    /// handle `"updates"` notifications from `xi-core`
     fn update(&mut self, update: Update) -> ServerResult<()>;
+    /// handle `"scroll_to"` notifications from `xi-core`
     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()>;
+    /// handle `"set_style"` notifications from `xi-core`
     fn set_style(&mut self, style: Style) -> ServerResult<()>;
 }
 
+/// A builder for the type `F` that implement the `Frontend` trait.
 pub trait FrontendBuilder<F>
 where
     F: Frontend,

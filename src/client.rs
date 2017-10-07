@@ -5,8 +5,10 @@ use protocol;
 use serde_json::{from_value, to_value};
 use serde::Serialize;
 
+/// A future returned by all the `Client`'s method.
 pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError>>;
 
+/// A client to send notifications and request to the core
 #[derive(Clone)]
 pub struct Client(pub protocol::Client);
 
@@ -30,7 +32,8 @@ fn get_edit_params<T: Serialize>(
 
 
 impl Client {
-    /// Send a notification to the core
+    /// Send a notification to the core. Most (if not all) notifications supported by the core are
+    /// already implemented, so this method should not be necessary in most cases.
     pub fn notify(&mut self, method: &str, params: Value) -> ClientResult<()> {
         info!(">>> notification: method={}, params={}", method, &params);
         Box::new(
@@ -40,6 +43,8 @@ impl Client {
         )
     }
 
+    /// Send a request to the core. Most (if not all) notifications supported by the core are
+    /// already implemented, so this method should not be necessary in most cases.
     pub fn request(&mut self, method: &str, params: Value) -> ClientResult<Value> {
         info!(">>> request : method={}, params={}", method, &params);
         Box::new(self.0.request(method, params).then(
@@ -51,8 +56,8 @@ impl Client {
         ))
     }
 
-    /// Send an
-    /// ["edit" notification](https://github.com/google/xi-editor/blob/c215deea8c2dfced91a9e019e1febdc8ce68158e/doc/frontend.md#edit)
+    /// Send an "edit" notification. Most (if not all) "edit" commands are already implemented, so
+    /// this method should not be necessary in most cases.
     fn edit<T: Serialize>(
         &mut self,
         view_id: &str,
@@ -65,6 +70,10 @@ impl Client {
         }
     }
 
+    /// Send an "scroll" notification
+    /// ```
+    /// {"method":"edit","params":{"method":"scroll","params":[21,80],"view_id":"view-id-1"}}
+    /// ```
     pub fn scroll(&mut self, view_id: &str, first_line: u64, last_line: u64) -> ClientResult<()> {
         self.edit(view_id, "scroll", Some(json!([first_line, last_line])))
     }
@@ -166,21 +175,14 @@ impl Client {
         self.edit(view_id, "click", Some(json!([line, column, 0, 1])))
     }
 
-    /// Implements dragging (extending a selection). Arguments are line, column, and flag as in click.
-    /// [Xi documentation](https://github.com/google/xi-editor/blob/c215deea8c2dfced91a9e019e1febdc8ce68158e/doc/frontend.md#drag)
     pub fn drag(&mut self, view_id: &str, line: u64, column: u64) -> ClientResult<()> {
         self.edit(view_id, "drag", Some(json!([line, column, 0])))
     }
 
-    /// Creates a new view, returning the view identifier as a string. file_path is optional; if
-    /// specified, the file is loaded into a new buffer; if not a new empty buffer is created.
-    /// Currently, only a single view into a given file can be open at a time.
-    ///
-    /// Note, there is currently no mechanism for reporting errors. Also note, the protocol
-    /// delegates power to load and save arbitrary files. Thus, exposing the protocol to any other
-    /// agent than a front-end in direct control should be done with extreme caution.
-    ///
-    /// [Xi documentation](https://github.com/google/xi-editor/blob/c215deea8c2dfced91a9e019e1febdc8ce68158e/doc/frontend.md#new_view)
+    /// send a `"new_view"` request to the core.
+    /// ```
+    /// {"id":1,"method":"new_view","params":{"file_path":"foo/test.txt"}}
+    /// ```
     pub fn new_view(&mut self, file_path: Option<String>) -> ClientResult<String> {
         let params = if let Some(file_path) = file_path {
             json!({ "file_path": file_path })
@@ -192,6 +194,7 @@ impl Client {
         Box::new(result)
     }
 
+    /// send a `"close_view"` notifycation to the core.
     pub fn close_view(&mut self, view_id: &str) -> ClientResult<()> {
         self.notify("close_view", json!({ "view_id": view_id }))
     }
