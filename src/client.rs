@@ -203,4 +203,39 @@ impl Client {
         let params = json!({"view_id": view_id, "file_path": file_path});
         Box::new(self.request("save", params).and_then(|_| Ok(())))
     }
+
+    pub fn set_theme(&mut self, theme: &str) -> ClientResult<()> {
+        let params = json!({ "theme_name": theme });
+        Box::new(self.notify("set_theme", params).and_then(|_| Ok(())))
+    }
+
+    pub fn start_plugin(&mut self, view_id: &str, name: &str) -> ClientResult<()> {
+        let params = json!({"view_id": view_id, "plugin_name": name});
+        Box::new(self.notify("start", params).and_then(|_| Ok(())))
+    }
+
+    pub fn stop_plugin(&mut self, view_id: &str, name: &str) -> ClientResult<()> {
+        let params = json!({"view_id": view_id, "plugin_name": name});
+        Box::new(self.notify("stop", params).and_then(|_| Ok(())))
+    }
+
+    pub fn notify_plugin(
+        &mut self,
+        view_id: &str,
+        plugin: &str,
+        method: &str,
+        params: Value,
+    ) -> ClientResult<()> {
+        let params = json!({
+            "view_id": view_id,
+            "receiver": plugin,
+            "notification": {
+                "method": method,
+                "params": params,
+            }
+        });
+        Box::new(self.notify("plugin_rpc", params).and_then(|_| Ok(())))
+    }
+
+    // TODO: requests for plugin_rpc
 }

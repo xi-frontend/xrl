@@ -14,8 +14,8 @@ pub trait Frontend {
     fn update(&mut self, update: Update) -> ServerResult<()>;
     /// handle `"scroll_to"` notifications from `xi-core`
     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()>;
-    /// handle `"set_style"` notifications from `xi-core`
-    fn set_style(&mut self, style: Style) -> ServerResult<()>;
+    /// handle `"def_style"` notifications from `xi-core`
+    fn def_style(&mut self, style: Style) -> ServerResult<()>;
 }
 
 /// A builder for the type `F` that implement the `Frontend` trait.
@@ -59,8 +59,8 @@ impl<F: Frontend> Service for F {
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
 
-            "set_style" => match from_value::<Style>(params) {
-                Ok(style) => self.set_style(style),
+            "def_style" => match from_value::<Style>(params) {
+                Ok(style) => self.def_style(style),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             _ => Box::new(future::err(ServerError::UnknownMethod(method.into()))),
