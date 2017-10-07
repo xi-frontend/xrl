@@ -1,4 +1,4 @@
-**WIP. Don't use yet.**
+XRL (Xi Rpc Lib) is an implementation of a client for Xi RPC.
+It is used to build [xi-tui](https://github.com/little-dude/xi-tui/).
 
-Trying to see if I can build a Tokio based crate for Xi RPC. If so, I intend to
-refactor [xi-tui](https://github.com/little-dude/xi-tui/) to use this.
+It is still work in progress, but the major features are already in place.
