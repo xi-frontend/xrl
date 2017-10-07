@@ -65,13 +65,11 @@ fn deserialize_update() {
                         cursor: vec![0],
                         styles: vec![],
                         text: "Bar".to_owned(),
-                        is_valid: true,
                     },
                     Line {
                         cursor: vec![],
                         styles: vec![],
                         text: "Foo".to_owned(),
-                        is_valid: true,
                     },
                 ],
             },

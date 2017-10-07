@@ -62,13 +62,11 @@ fn deserialize_operation_from_value() {
                 cursor: vec![0],
                 styles: vec![],
                 text: "foo".to_owned(),
-                is_valid: true,
             },
             Line {
                 cursor: vec![],
                 styles: vec![],
                 text: "".to_owned(),
-                is_valid: true,
             },
         ],
     };
@@ -99,13 +97,11 @@ fn deserialize_operation() {
                 cursor: vec![0],
                 styles: vec![],
                 text: "foo".to_owned(),
-                is_valid: true,
             },
             Line {
                 cursor: vec![],
                 styles: vec![],
                 text: "".to_owned(),
-                is_valid: true,
             },
         ],
     };
