@@ -201,7 +201,7 @@ impl Client {
 
     pub fn save(&mut self, view_id: &str, file_path: &str) -> ClientResult<()> {
         let params = json!({"view_id": view_id, "file_path": file_path});
-        Box::new(self.request("save", params).and_then(|_| Ok(())))
+        Box::new(self.notify("save", params).and_then(|_| Ok(())))
     }
 
     pub fn set_theme(&mut self, theme: &str) -> ClientResult<()> {
