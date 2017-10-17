@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer};
 use super::operation::Operation;
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Update {
     pub rev: Option<u64>,
     pub operations: Vec<Operation>,

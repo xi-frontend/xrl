@@ -10,7 +10,7 @@ fn default_italic() -> bool {
 fn default_underline() -> bool {
     false
 }
-#[derive(Default, Deserialize, Debug, PartialEq)]
+#[derive(Default, Deserialize, Debug, PartialEq, Clone)]
 pub struct Style {
     pub id: u64,
     pub fg_color: Option<u32>,
