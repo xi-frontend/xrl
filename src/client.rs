@@ -131,25 +131,25 @@ impl Client {
     }
 
     pub fn page_up(&mut self, view_id: &str) -> ClientResult<()> {
-        self.edit(view_id, "page_up", None as Option<Value>)
+        self.edit(view_id, "scroll_page_up", None as Option<Value>)
     }
 
     pub fn page_up_sel(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(
             view_id,
-            "page_up_and_modify_selection",
+            "scroll_page_up_and_modify_selection",
             None as Option<Value>,
         )
     }
 
     pub fn page_down(&mut self, view_id: &str) -> ClientResult<()> {
-        self.edit(view_id, "page_down", None as Option<Value>)
+        self.edit(view_id, "scroll_page_down", None as Option<Value>)
     }
 
     pub fn page_down_sel(&mut self, view_id: &str) -> ClientResult<()> {
         self.edit(
             view_id,
-            "page_down_and_modify_selection",
+            "scroll_page_down_and_modify_selection",
             None as Option<Value>,
         )
     }
