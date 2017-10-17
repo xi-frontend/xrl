@@ -1,4 +1,4 @@
-#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct ScrollTo {
     pub line: u64,
     #[serde(rename = "col")]

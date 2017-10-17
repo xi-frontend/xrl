@@ -3,7 +3,7 @@ use serde_json as json;
 
 use super::line::Line;
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 pub enum OperationType {
     Copy_,
     Skip,
@@ -12,7 +12,7 @@ pub enum OperationType {
     Insert,
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 pub struct Operation {
     #[serde(rename = "op")]
     #[serde(deserialize_with = "deserialize_operation_type")]
