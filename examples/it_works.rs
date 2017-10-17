@@ -25,8 +25,8 @@ impl Frontend for MyFrontend {
         println!("received `scroll_to` from Xi core:\n{:?}", scroll_to);
         Box::new(future::ok(()))
     }
-    fn set_style(&mut self, style: Style) -> ServerResult<()> {
-        println!("received `set_style` from Xi core:\n{:?}", style);
+    fn def_style(&mut self, style: Style) -> ServerResult<()> {
+        println!("received `def_style` from Xi core:\n{:?}", style);
         Box::new(future::ok(()))
     }
 }
