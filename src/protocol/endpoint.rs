@@ -112,8 +112,9 @@ pub struct Response(oneshot::Receiver<Result<Value, Value>>);
 
 type AckTx = oneshot::Sender<()>;
 
-/// A future that resolves when a notification has been effictively sent to the server. It does not
-/// guarantees that the server receives it, just that it has been sent.
+/// A future that resolves when a notification has been effictively sent to the
+/// server. It does not guarantees that the server receives it, just that it
+/// has been sent.
 pub struct Ack(oneshot::Receiver<()>);
 
 type RequestTx = mpsc::UnboundedSender<(Request, ResponseTx)>;
@@ -459,10 +460,10 @@ impl Client {
             params: params,
         };
         let (tx, rx) = oneshot::channel();
-        // If send returns an Err, its because the other side has been dropped. By ignoring it,
-        // we are just dropping the `tx`, which will mean the rx will return Canceled when
-        // polled. In turn, that is translated into a BrokenPipe, which conveys the proper
-        // error.
+        // If send returns an Err, its because the other side has been dropped.
+        // By ignoring it, we are just dropping the `tx`, which will mean the
+        // rx will return Canceled when polled. In turn, that is translated
+        // into a BrokenPipe, which conveys the proper error.
         let _ = mpsc::UnboundedSender::unbounded_send(&self.requests_tx, (request, tx));
         Response(rx)
     }

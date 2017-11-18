@@ -10,7 +10,8 @@ pub enum ClientError {
     /// A request failed due to an internal error.
     RequestFailed,
 
-    /// A request or a notification could not be sent due to a serialization error.
+    /// A request or a notification could not be sent due to a
+    /// serialization error.
     SerializeFailed(SerdeError),
 
     /// The server response is an error
