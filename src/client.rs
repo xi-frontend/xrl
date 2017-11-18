@@ -61,7 +61,7 @@ impl Client {
     /// Send an "edit" notification. Most (if not all) "edit" commands are
     /// already implemented, so this method should not be necessary in most
     /// cases.
-    fn edit<T: Serialize>(
+    pub fn edit<T: Serialize>(
         &mut self,
         view_id: &str,
         method: &str,
@@ -128,6 +128,14 @@ impl Client {
             "move_down_and_modify_selection",
             None as Option<Value>,
         )
+    }
+
+    pub fn backspace(&mut self, view_id: &str) -> ClientResult<()> {
+        self.del(view_id)
+    }
+
+    pub fn delete(&mut self, view_id: &str) -> ClientResult<()> {
+        self.edit(view_id, "delete_forward", None as Option<Value>)
     }
 
     pub fn del(&mut self, view_id: &str) -> ClientResult<()> {
