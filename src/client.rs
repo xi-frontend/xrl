@@ -32,8 +32,9 @@ fn get_edit_params<T: Serialize>(
 
 
 impl Client {
-    /// Send a notification to the core. Most (if not all) notifications supported by the core are
-    /// already implemented, so this method should not be necessary in most cases.
+    /// Send a notification to the core. Most (if not all) notifications
+    /// supported by the core are already implemented, so this method
+    /// should not be necessary in most cases.
     pub fn notify(&mut self, method: &str, params: Value) -> ClientResult<()> {
         info!(">>> notification: method={}, params={}", method, &params);
         Box::new(
@@ -43,8 +44,9 @@ impl Client {
         )
     }
 
-    /// Send a request to the core. Most (if not all) notifications supported by the core are
-    /// already implemented, so this method should not be necessary in most cases.
+    /// Send a request to the core. Most (if not all) notifications
+    /// supported by the core are already implemented, so this method
+    /// should not be necessary in most cases.
     pub fn request(&mut self, method: &str, params: Value) -> ClientResult<Value> {
         info!(">>> request : method={}, params={}", method, &params);
         Box::new(self.0.request(method, params).then(
@@ -56,8 +58,9 @@ impl Client {
         ))
     }
 
-    /// Send an "edit" notification. Most (if not all) "edit" commands are already implemented, so
-    /// this method should not be necessary in most cases.
+    /// Send an "edit" notification. Most (if not all) "edit" commands are
+    /// already implemented, so this method should not be necessary in most
+    /// cases.
     fn edit<T: Serialize>(
         &mut self,
         view_id: &str,
@@ -72,7 +75,8 @@ impl Client {
 
     /// Send an "scroll" notification
     /// ```
-    /// {"method":"edit","params":{"method":"scroll","params":[21,80],"view_id":"view-id-1"}}
+    /// {"method":"edit","params":{"method":"scroll","params":[21,80],
+    /// "view_id":"view-id-1"}}
     /// ```
     pub fn scroll(&mut self, view_id: &str, first_line: u64, last_line: u64) -> ClientResult<()> {
         self.edit(view_id, "scroll", Some(json!([first_line, last_line])))

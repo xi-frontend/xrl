@@ -46,7 +46,8 @@ impl Message {
     pub fn to_vec(&self) -> Vec<u8> {
         // According to serde_json's documentation for `to_value`:
         //
-        // The conversion [of T to Value] can fail if T's implementation of Serialize decides to
+        // The conversion [of T to Value] can fail if T's implementation of
+        // Serialize decides to
         // fail, or if T contains a map with non-string keys.
         //
         // This should not be the case here, so I think it's safe to unwrap.

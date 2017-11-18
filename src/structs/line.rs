@@ -17,8 +17,8 @@ pub struct Line {
     pub styles: Vec<StyleDef>,
 }
 
-// FIXME: it's not super efficient to create an intermediate vector, this might become a problem
-// when we have big updates with a lot of styles.
+// FIXME: it's not super efficient to create an intermediate vector, this might
+// become a problem when we have big updates with a lot of styles.
 pub fn deserialize_styles<'de, D>(deserializer: D) -> Result<Vec<StyleDef>, D::Error>
 where
     D: Deserializer<'de>,
