@@ -7,8 +7,8 @@ use client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
 
-/// The `Frontend` trait must be implemented by clients. It defines how the client handles
-/// notifications and requests coming from `xi-core`.
+/// The `Frontend` trait must be implemented by clients. It defines how the
+/// client handles notifications and requests coming from `xi-core`.
 pub trait Frontend {
     /// handle `"updates"` notifications from `xi-core`
     fn update(&mut self, update: Update) -> ServerResult<()>;
@@ -49,21 +49,35 @@ impl<F: Frontend> Service for F {
     ) -> Box<Future<Item = (), Error = Self::Error>> {
         info!("<<< notification: method={}, params={}", method, &params);
         match method {
-            "update" => match from_value::<Update>(params) {
-                Ok(update) => self.update(update),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            },
+            "update" => {
+                match from_value::<Update>(params) {
+                    Ok(update) => self.update(update),
+                    Err(e) => Box::new(
+                        future::err(ServerError::DeserializeFailed(e)),
+                    ),
+                }
+            }
 
-            "scroll_to" => match from_value::<ScrollTo>(params) {
-                Ok(scroll_to) => self.scroll_to(scroll_to),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            },
+            "scroll_to" => {
+                match from_value::<ScrollTo>(params) {
+                    Ok(scroll_to) => self.scroll_to(scroll_to),
+                    Err(e) => Box::new(
+                        future::err(ServerError::DeserializeFailed(e)),
+                    ),
+                }
+            }
 
-            "def_style" => match from_value::<Style>(params) {
-                Ok(style) => self.def_style(style),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            },
-            _ => Box::new(future::err(ServerError::UnknownMethod(method.into()))),
+            "def_style" => {
+                match from_value::<Style>(params) {
+                    Ok(style) => self.def_style(style),
+                    Err(e) => Box::new(
+                        future::err(ServerError::DeserializeFailed(e)),
+                    ),
+                }
+            }
+            _ => Box::new(
+                future::err(ServerError::UnknownMethod(method.into())),
+            ),
         }
     }
 }

@@ -1,5 +1,6 @@
-//! `xrl` is a Tokio based library to build clients for the Xi editor. The challenge with Xi RPC is
-//! that endpoints are both client (sending requests/notifications) and server (handling incoming
+//! `xrl` is a Tokio based library to build clients for the Xi editor. The
+//! challenge with Xi RPC is that endpoints are both client (sending
+//! requests/notifications) and server (handling incoming
 //! requests/notifications).
 //!
 //!
@@ -12,7 +13,7 @@
 //!
 //! use futures::{future, Future, Stream};
 //! use tokio_core::reactor::Core;
-//! use xrl::{spawn, Client, Frontend, FrontendBuilder, ScrollTo, ServerResult, Style, Update};
+//! use xrl::*;
 //!
 //!
 //! // Type that represent our client
@@ -20,7 +21,7 @@
 //!     client: Client,
 //! }
 //!
-//! // Implement how our client handles notifications and requests from the core.
+//! // Implement how our client handles notifications & requests from the core.
 //! impl Frontend for MyFrontend {
 //!     fn update(&mut self, update: Update) -> ServerResult<()> {
 //!         println!("received `update` from Xi core:\n{:?}", update);
@@ -32,7 +33,7 @@
 //!         println!("received `scroll_to` from Xi core:\n{:?}", scroll_to);
 //!         Box::new(future::ok(()))
 //!     }
-//!     fn set_style(&mut self, style: Style) -> ServerResult<()> {
+//!     fn def_style(&mut self, style: Style) -> ServerResult<()> {
 //!         println!("received `set_style` from Xi core:\n{:?}", style);
 //!         Box::new(future::ok(()))
 //!     }
@@ -51,7 +52,8 @@
 //!     let handle = core.handle();
 //!
 //!     // spawn Xi core
-//!     let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {}, &handle);
+//! let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {},
+//! &handle);
 //!
 //!     // start logging Xi core's stderr
 //!     let log_core_errors = core_stderr
@@ -99,4 +101,5 @@ pub use frontend::{Frontend, FrontendBuilder, ServerResult};
 pub use client::{Client, ClientResult};
 pub use errors::{ClientError, ServerError};
 pub use core::{spawn, CoreStderr};
-pub use structs::{Line, Operation, OperationType, ScrollTo, Style, StyleDef, Update};
+pub use structs::{Line, Operation, OperationType, ScrollTo, Style, StyleDef,
+                  Update};

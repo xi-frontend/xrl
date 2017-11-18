@@ -21,8 +21,12 @@ impl Display for DecodeError {
 impl Error for DecodeError {
     fn description(&self) -> &str {
         match *self {
-            DecodeError::Truncated => "not enough bytes to decode a complete message",
-            DecodeError::Io(_) => "failure to read or write bytes on an IO stream",
+            DecodeError::Truncated => {
+                "not enough bytes to decode a complete message"
+            }
+            DecodeError::Io(_) => {
+                "failure to read or write bytes on an IO stream"
+            }
             DecodeError::InvalidJson => "the byte sequence is not valid JSON",
             DecodeError::InvalidMessage => {
                 "the byte sequence is valid JSON, but not a valid message"

@@ -17,9 +17,11 @@ pub struct Line {
     pub styles: Vec<StyleDef>,
 }
 
-// FIXME: it's not super efficient to create an intermediate vector, this might become a problem
-// when we have big updates with a lot of styles.
-pub fn deserialize_styles<'de, D>(deserializer: D) -> Result<Vec<StyleDef>, D::Error>
+// FIXME: it's not super efficient to create an intermediate vector, this might
+// become a problem when we have big updates with a lot of styles.
+pub fn deserialize_styles<'de, D>(
+    deserializer: D,
+) -> Result<Vec<StyleDef>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -36,7 +38,7 @@ where
     for i in 0..nb_styles {
         styles.push(StyleDef {
             offset: v[i * 3],
-            length: v[i * 3 + 1] as u64,   // FIXME: this can panic
+            length: v[i * 3 + 1] as u64, // FIXME: this can panic
             style_id: v[i * 3 + 2] as u64, // FIXME: this can panic
         });
     }

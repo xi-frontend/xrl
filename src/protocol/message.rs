@@ -37,8 +37,12 @@ impl Message {
         let value = from_reader(rd)?;
         match get_message_type(&value) {
             ValueType::Request => Ok(Message::Request(Request::decode(value)?)),
-            ValueType::Response => Ok(Message::Response(Response::decode(value)?)),
-            ValueType::Notification => Ok(Message::Notification(Notification::decode(value)?)),
+            ValueType::Response => Ok(
+                Message::Response(Response::decode(value)?),
+            ),
+            ValueType::Notification => Ok(Message::Notification(
+                Notification::decode(value)?,
+            )),
             ValueType::Invalid => Err(DecodeError::InvalidMessage),
         }
     }
@@ -46,12 +50,15 @@ impl Message {
     pub fn to_vec(&self) -> Vec<u8> {
         // According to serde_json's documentation for `to_value`:
         //
-        // The conversion [of T to Value] can fail if T's implementation of Serialize decides to
+        // The conversion [of T to Value] can fail if T's implementation of
+        // Serialize decides to
         // fail, or if T contains a map with non-string keys.
         //
         // This should not be the case here, so I think it's safe to unwrap.
         match *self {
-            Message::Request(ref request) => to_vec(request).expect("Request serialization failed"),
+            Message::Request(ref request) => {
+                to_vec(request).expect("Request serialization failed")
+            }
             Message::Response(ref response) => {
                 to_vec(response).expect("Response serialization failed")
             }
@@ -148,8 +155,8 @@ fn get_message_type(value: &Value) -> ValueType {
             } else {
                 ValueType::Notification
             }
-        } else if (map.contains_key("result") || map.contains_key("error"))
-            && map.contains_key("id")
+        } else if (map.contains_key("result") || map.contains_key("error")) &&
+                   map.contains_key("id")
         {
             ValueType::Response
         } else {

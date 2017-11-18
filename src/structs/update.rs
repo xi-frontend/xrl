@@ -30,7 +30,10 @@ impl<'de> Deserialize<'de> for Update {
     where
         D: Deserializer<'de>,
     {
-        Deserialize::deserialize(deserializer).map(|UpdateHelper { update, view_id }| {
+        Deserialize::deserialize(deserializer).map(|UpdateHelper {
+             update,
+             view_id,
+         }| {
             Update {
                 rev: update.rev,
                 operations: update.operations,

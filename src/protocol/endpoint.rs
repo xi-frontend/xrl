@@ -34,7 +34,8 @@ pub trait Service {
 
 struct Server<S: Service> {
     service: S,
-    request_tasks: HashMap<u64, Box<Future<Item = Result<S::T, S::E>, Error = S::Error>>>,
+    request_tasks:
+        HashMap<u64, Box<Future<Item = Result<S::T, S::E>, Error = S::Error>>>,
     notification_tasks: Vec<Box<Future<Item = (), Error = S::Error>>>,
 }
 
@@ -65,7 +66,10 @@ impl<S: Service> Server<S> {
         }
     }
 
-    fn poll_request_tasks<T: AsyncRead + AsyncWrite>(&mut self, stream: &mut Transport<T>) {
+    fn poll_request_tasks<T: AsyncRead + AsyncWrite>(
+        &mut self,
+        stream: &mut Transport<T>,
+    ) {
         trace!("polling pending requests");
         let mut done = vec![];
         for (id, task) in &mut self.request_tasks {
@@ -73,7 +77,9 @@ impl<S: Service> Server<S> {
                 Ok(Async::Ready(response)) => {
                     let msg = Message::Response(ResponseMessage {
                         id: *id,
-                        result: response.map(|v| v.into()).map_err(|e| e.into()),
+                        result: response.map(|v| v.into()).map_err(
+                            |e| e.into(),
+                        ),
                     });
                     done.push(*id);
                     stream.send(msg);
@@ -112,8 +118,9 @@ pub struct Response(oneshot::Receiver<Result<Value, Value>>);
 
 type AckTx = oneshot::Sender<()>;
 
-/// A future that resolves when a notification has been effictively sent to the server. It does not
-/// guarantees that the server receives it, just that it has been sent.
+/// A future that resolves when a notification has been effictively sent to the
+/// server. It does not guarantees that the server receives it, just that it
+/// has been sent.
 pub struct Ack(oneshot::Receiver<()>);
 
 type RequestTx = mpsc::UnboundedSender<(Request, ResponseTx)>;
@@ -127,9 +134,9 @@ impl Future for Response {
     type Error = RpcError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.0
-            .poll()
-            .map_err(|oneshot::Canceled| RpcError::ResponseCanceled)
+        self.0.poll().map_err(
+            |oneshot::Canceled| RpcError::ResponseCanceled,
+        )
     }
 }
 
@@ -138,9 +145,9 @@ impl Future for Ack {
     type Error = RpcError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.0
-            .poll()
-            .map_err(|oneshot::Canceled| RpcError::AckCanceled)
+        self.0.poll().map_err(
+            |oneshot::Canceled| RpcError::AckCanceled,
+        )
     }
 }
 
@@ -181,7 +188,10 @@ impl InnerClient {
         self.shutting_down
     }
 
-    fn process_notifications<T: AsyncRead + AsyncWrite>(&mut self, stream: &mut Transport<T>) {
+    fn process_notifications<T: AsyncRead + AsyncWrite>(
+        &mut self,
+        stream: &mut Transport<T>,
+    ) {
         trace!("polling client notifications channel");
         loop {
             match self.notifications_rx.poll() {
@@ -208,7 +218,10 @@ impl InnerClient {
         }
     }
 
-    fn process_requests<T: AsyncRead + AsyncWrite>(&mut self, stream: &mut Transport<T>) {
+    fn process_requests<T: AsyncRead + AsyncWrite>(
+        &mut self,
+        stream: &mut Transport<T>,
+    ) {
         trace!("polling client requests channel");
         loop {
             match self.requests_rx.poll() {
@@ -217,8 +230,10 @@ impl InnerClient {
                     trace!("sending request: {:?}", request);
                     request.id = self.request_id;
                     stream.send(Message::Request(request));
-                    self.pending_requests
-                        .insert(self.request_id, response_sender);
+                    self.pending_requests.insert(
+                        self.request_id,
+                        response_sender,
+                    );
                 }
                 Ok(Async::Ready(None)) => {
                     warn!("client closed the requests channel.");
@@ -279,7 +294,9 @@ where
             Ok(AsyncSink::Ready) => return,
             // FIXME: there should probably be a retry mechanism.
             Ok(AsyncSink::NotReady(_message)) => panic!("The sink is full."),
-            Err(e) => panic!("An error occured while trying to send message: {:?}", e),
+            Err(e) => {
+                panic!("An error occured while trying to send message: {:?}", e)
+            }
         }
     }
 }
@@ -303,7 +320,10 @@ where
     type SinkItem = Message;
     type SinkError = io::Error;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
+    fn start_send(
+        &mut self,
+        item: Self::SinkItem,
+    ) -> StartSend<Self::SinkItem, Self::SinkError> {
         self.0.start_send(item)
     }
 
@@ -338,30 +358,36 @@ where
     fn handle_message(&mut self, msg: Message) {
         debug!("handling message from remote peer {:?}", msg);
         match msg {
-            Message::Request(request) => if let Some(ref mut server) = self.server {
-                server.get_mut().process_request(request);
-            } else {
-                warn!(
-                    "this endpoint does not handle requests => request ignored: {:?}",
-                    request
-                );
-            },
-            Message::Notification(notification) => if let Some(ref mut server) = self.server {
-                server.get_mut().process_notification(notification);
-            } else {
-                warn!(
-                    "this endpoint does not handle notifications => notification ignored: {:?}",
-                    notification
-                );
-            },
-            Message::Response(response) => if let Some(ref mut client) = self.client {
-                client.get_mut().process_response(response);
-            } else {
-                warn!(
-                    "this endpoint does not handle responses => response ignored: {:?}",
-                    response
-                );
-            },
+            Message::Request(request) => {
+                if let Some(ref mut server) = self.server {
+                    server.get_mut().process_request(request);
+                } else {
+                    warn!(
+                        "this endpoint does not handle requests => request ignored: {:?}",
+                        request
+                    );
+                }
+            }
+            Message::Notification(notification) => {
+                if let Some(ref mut server) = self.server {
+                    server.get_mut().process_notification(notification);
+                } else {
+                    warn!(
+                        "this endpoint does not handle notifications => notification ignored: {:?}",
+                        notification
+                    );
+                }
+            }
+            Message::Response(response) => {
+                if let Some(ref mut client) = self.client {
+                    client.get_mut().process_response(response);
+                } else {
+                    warn!(
+                        "this endpoint does not handle responses => response ignored: {:?}",
+                        response
+                    );
+                }
+            }
         }
     }
 
@@ -459,11 +485,14 @@ impl Client {
             params: params,
         };
         let (tx, rx) = oneshot::channel();
-        // If send returns an Err, its because the other side has been dropped. By ignoring it,
-        // we are just dropping the `tx`, which will mean the rx will return Canceled when
-        // polled. In turn, that is translated into a BrokenPipe, which conveys the proper
-        // error.
-        let _ = mpsc::UnboundedSender::unbounded_send(&self.requests_tx, (request, tx));
+        // If send returns an Err, its because the other side has been dropped.
+        // By ignoring it, we are just dropping the `tx`, which will mean the
+        // rx will return Canceled when polled. In turn, that is translated
+        // into a BrokenPipe, which conveys the proper error.
+        let _ = mpsc::UnboundedSender::unbounded_send(
+            &self.requests_tx,
+            (request, tx),
+        );
         Response(rx)
     }
 
@@ -478,7 +507,10 @@ impl Client {
             params: params,
         };
         let (tx, rx) = oneshot::channel();
-        let _ = mpsc::UnboundedSender::unbounded_send(&self.notifications_tx, (notification, tx));
+        let _ = mpsc::UnboundedSender::unbounded_send(
+            &self.notifications_tx,
+            (notification, tx),
+        );
         Ack(rx)
     }
 }

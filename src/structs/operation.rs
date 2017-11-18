@@ -23,7 +23,9 @@ pub struct Operation {
     pub lines: Vec<Line>,
 }
 
-fn deserialize_operation_type<'de, D>(de: D) -> ::std::result::Result<OperationType, D::Error>
+fn deserialize_operation_type<'de, D>(
+    de: D,
+) -> ::std::result::Result<OperationType, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -31,8 +33,12 @@ where
     match value {
         json::Value::String(ref s) if &*s == "copy" => Ok(OperationType::Copy_),
         json::Value::String(ref s) if &*s == "skip" => Ok(OperationType::Skip),
-        json::Value::String(ref s) if &*s == "invalidate" => Ok(OperationType::Invalidate),
-        json::Value::String(ref s) if &*s == "update" => Ok(OperationType::Update),
+        json::Value::String(ref s) if &*s == "invalidate" => Ok(
+            OperationType::Invalidate,
+        ),
+        json::Value::String(ref s) if &*s == "update" => Ok(
+            OperationType::Update,
+        ),
         json::Value::String(ref s) if &*s == "ins" => Ok(OperationType::Insert),
         _ => Err(serde::de::Error::custom(
             "Unexpected value for operation type",
