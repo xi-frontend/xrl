@@ -21,9 +21,7 @@ pub enum ClientError {
 impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ClientError::NotifyFailed => {
-                write!(f, "Failed to send a notification")
-            }
+            ClientError::NotifyFailed => write!(f, "Failed to send a notification"),
             ClientError::RequestFailed => {
                 write!(f, "Failed to send a request, or receive its response")
             }
@@ -41,9 +39,7 @@ impl error::Error for ClientError {
     fn description(&self) -> &str {
         match *self {
             ClientError::NotifyFailed => "Failed to send a notification",
-            ClientError::RequestFailed => {
-                "Failed to send a request or receive its response"
-            }
+            ClientError::RequestFailed => "Failed to send a request or receive its response",
             ClientError::ErrorReturned(_) => "The core answered with an error",
             ClientError::SerializeFailed(_) => "failed to serialize message",
         }
@@ -74,17 +70,13 @@ pub enum ServerError {
 impl fmt::Display for ServerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ServerError::UnknownMethod(ref method) => {
-                write!(f, "Unkown method {}", method)
-            }
+            ServerError::UnknownMethod(ref method) => write!(f, "Unkown method {}", method),
             ServerError::Other(ref s) => write!(f, "Unkown error: {}", s),
-            ServerError::DeserializeFailed(ref e) => {
-                write!(
-                    f,
-                    "Failed to deserialize the parameters of a request or notification: {}",
-                    e
-                )
-            }
+            ServerError::DeserializeFailed(ref e) => write!(
+                f,
+                "Failed to deserialize the parameters of a request or notification: {}",
+                e
+            ),
         }
     }
 }

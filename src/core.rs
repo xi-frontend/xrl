@@ -48,11 +48,7 @@ impl AsyncWrite for Core {
 }
 
 /// Start Xi core, and return a client and a stream of Xi's stderr lines.
-pub fn spawn<B, F>(
-    executable: &str,
-    builder: B,
-    handle: &Handle,
-) -> (Client, CoreStderr)
+pub fn spawn<B, F>(executable: &str, builder: B, handle: &Handle) -> (Client, CoreStderr)
 where
     B: FrontendBuilder<F> + 'static,
     F: Frontend + 'static,
@@ -90,19 +86,13 @@ impl codec::Decoder for LineCodec {
     type Item = String;
     type Error = io::Error;
 
-    fn decode(
-        &mut self,
-        buf: &mut BytesMut,
-    ) -> Result<Option<String>, io::Error> {
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<String>, io::Error> {
         if let Some(n) = buf.as_ref().iter().position(|b| *b == b'\n') {
             let line = buf.split_to(n);
             buf.split_to(1);
             return match ::std::str::from_utf8(line.as_ref()) {
                 Ok(s) => Ok(Some(s.to_string())),
-                Err(_) => Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "invalid string",
-                )),
+                Err(_) => Err(io::Error::new(io::ErrorKind::Other, "invalid string")),
             };
         }
         Ok(None)

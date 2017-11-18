@@ -37,19 +37,17 @@ impl Client {
     /// should not be necessary in most cases.
     pub fn notify(&mut self, method: &str, params: Value) -> ClientResult<()> {
         info!(">>> notification: method={}, params={}", method, &params);
-        Box::new(self.0.notify(method, params).map_err(
-            |_| ClientError::NotifyFailed,
-        ))
+        Box::new(
+            self.0
+                .notify(method, params)
+                .map_err(|_| ClientError::NotifyFailed),
+        )
     }
 
     /// Send a request to the core. Most (if not all) notifications
     /// supported by the core are already implemented, so this method
     /// should not be necessary in most cases.
-    pub fn request(
-        &mut self,
-        method: &str,
-        params: Value,
-    ) -> ClientResult<Value> {
+    pub fn request(&mut self, method: &str, params: Value) -> ClientResult<Value> {
         info!(">>> request : method={}, params={}", method, &params);
         Box::new(self.0.request(method, params).then(
             |response| match response {
@@ -80,12 +78,7 @@ impl Client {
     /// {"method":"edit","params":{"method":"scroll","params":[21,80],
     /// "view_id":"view-id-1"}}
     /// ```
-    pub fn scroll(
-        &mut self,
-        view_id: &str,
-        first_line: u64,
-        last_line: u64,
-    ) -> ClientResult<()> {
+    pub fn scroll(&mut self, view_id: &str, first_line: u64, last_line: u64) -> ClientResult<()> {
         self.edit(view_id, "scroll", Some(json!([first_line, last_line])))
     }
 
@@ -190,21 +183,11 @@ impl Client {
     }
 
     // FIXME: handle modifier and click count
-    pub fn click(
-        &mut self,
-        view_id: &str,
-        line: u64,
-        column: u64,
-    ) -> ClientResult<()> {
+    pub fn click(&mut self, view_id: &str, line: u64, column: u64) -> ClientResult<()> {
         self.edit(view_id, "click", Some(json!([line, column, 0, 1])))
     }
 
-    pub fn drag(
-        &mut self,
-        view_id: &str,
-        line: u64,
-        column: u64,
-    ) -> ClientResult<()> {
+    pub fn drag(&mut self, view_id: &str, line: u64, column: u64) -> ClientResult<()> {
         self.edit(view_id, "drag", Some(json!([line, column, 0])))
     }
 
@@ -212,18 +195,14 @@ impl Client {
     /// ```
     /// {"id":1,"method":"new_view","params":{"file_path":"foo/test.txt"}}
     /// ```
-    pub fn new_view(
-        &mut self,
-        file_path: Option<String>,
-    ) -> ClientResult<String> {
+    pub fn new_view(&mut self, file_path: Option<String>) -> ClientResult<String> {
         let params = if let Some(file_path) = file_path {
             json!({ "file_path": file_path })
         } else {
             json!({})
         };
-        let result = self.request("new_view", params).and_then(|result| {
-            from_value::<String>(result).map_err(From::from)
-        });
+        let result = self.request("new_view", params)
+            .and_then(|result| from_value::<String>(result).map_err(From::from));
         Box::new(result)
     }
 
@@ -242,20 +221,12 @@ impl Client {
         Box::new(self.notify("set_theme", params).and_then(|_| Ok(())))
     }
 
-    pub fn start_plugin(
-        &mut self,
-        view_id: &str,
-        name: &str,
-    ) -> ClientResult<()> {
+    pub fn start_plugin(&mut self, view_id: &str, name: &str) -> ClientResult<()> {
         let params = json!({"view_id": view_id, "plugin_name": name});
         Box::new(self.notify("start", params).and_then(|_| Ok(())))
     }
 
-    pub fn stop_plugin(
-        &mut self,
-        view_id: &str,
-        name: &str,
-    ) -> ClientResult<()> {
+    pub fn stop_plugin(&mut self, view_id: &str, name: &str) -> ClientResult<()> {
         let params = json!({"view_id": view_id, "plugin_name": name});
         Box::new(self.notify("stop", params).and_then(|_| Ok(())))
     }

@@ -19,12 +19,10 @@ impl Decoder for Codec {
 
             match Message::decode(&mut io::Cursor::new(&line)) {
                 Ok(message) => return Ok(Some(message)),
-                Err(err) => {
-                    match err {
-                        DecodeError::Io(err) => return Err(err),
-                        _ => return Ok(None),
-                    }
-                }
+                Err(err) => match err {
+                    DecodeError::Io(err) => return Err(err),
+                    _ => return Ok(None),
+                },
             }
         }
         Ok(None)
@@ -35,11 +33,7 @@ impl Encoder for Codec {
     type Item = Message;
     type Error = io::Error;
 
-    fn encode(
-        &mut self,
-        msg: Self::Item,
-        buf: &mut BytesMut,
-    ) -> io::Result<()> {
+    fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
         let bytes = msg.to_vec();
         trace!(">>> {}", ::std::str::from_utf8(&bytes).unwrap());
         buf.reserve(bytes.len() + 1);

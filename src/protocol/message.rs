@@ -37,12 +37,8 @@ impl Message {
         let value = from_reader(rd)?;
         match get_message_type(&value) {
             ValueType::Request => Ok(Message::Request(Request::decode(value)?)),
-            ValueType::Response => Ok(
-                Message::Response(Response::decode(value)?),
-            ),
-            ValueType::Notification => Ok(Message::Notification(
-                Notification::decode(value)?,
-            )),
+            ValueType::Response => Ok(Message::Response(Response::decode(value)?)),
+            ValueType::Notification => Ok(Message::Notification(Notification::decode(value)?)),
             ValueType::Invalid => Err(DecodeError::InvalidMessage),
         }
     }
@@ -56,9 +52,7 @@ impl Message {
         //
         // This should not be the case here, so I think it's safe to unwrap.
         match *self {
-            Message::Request(ref request) => {
-                to_vec(request).expect("Request serialization failed")
-            }
+            Message::Request(ref request) => to_vec(request).expect("Request serialization failed"),
             Message::Response(ref response) => {
                 to_vec(response).expect("Response serialization failed")
             }
@@ -155,8 +149,8 @@ fn get_message_type(value: &Value) -> ValueType {
             } else {
                 ValueType::Notification
             }
-        } else if (map.contains_key("result") || map.contains_key("error")) &&
-                   map.contains_key("id")
+        } else if (map.contains_key("result") || map.contains_key("error"))
+            && map.contains_key("id")
         {
             ValueType::Response
         } else {

@@ -101,5 +101,4 @@ pub use frontend::{Frontend, FrontendBuilder, ServerResult};
 pub use client::{Client, ClientResult};
 pub use errors::{ClientError, ServerError};
 pub use core::{spawn, CoreStderr};
-pub use structs::{Line, Operation, OperationType, ScrollTo, Style, StyleDef,
-                  Update};
+pub use structs::{Line, Operation, OperationType, ScrollTo, Style, StyleDef, Update};
