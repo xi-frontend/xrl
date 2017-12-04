@@ -5,7 +5,14 @@ extern crate xrl;
 
 use futures::{future, Future, Stream};
 use tokio_core::reactor::Core;
-use xrl::{spawn, Client, Frontend, FrontendBuilder, ScrollTo, ServerResult, Style, Update};
+use xrl::{
+    Update, ScrollTo, Style,
+    AvailablePlugins, UpdateCmds,
+    PluginStarted, PluginStoped,
+    ConfigChanged, ThemeChanged,
+    Client, ServerResult, Frontend,
+    FrontendBuilder, spawn,
+};
 
 
 // Type that represent our client
@@ -27,6 +34,30 @@ impl Frontend for MyFrontend {
     }
     fn def_style(&mut self, style: Style) -> ServerResult<()> {
         println!("received `def_style` from Xi core:\n{:?}", style);
+        Box::new(future::ok(()))
+    }
+    fn available_plugins(&mut self, scroll_to: AvailablePlugins) -> ServerResult<()> {
+        println!("received `available_plugins` from Xi core:\n{:?}", scroll_to);
+        Box::new(future::ok(()))
+    }
+    fn update_cmds(&mut self, style: UpdateCmds) -> ServerResult<()> {
+        println!("received `update_cmds` from Xi core:\n{:?}", style);
+        Box::new(future::ok(()))
+    }
+    fn plugin_started(&mut self, style: PluginStarted) -> ServerResult<()> {
+        println!("received `plugin_started` from Xi core:\n{:?}", style);
+        Box::new(future::ok(()))
+    }
+    fn plugin_stoped(&mut self, style: PluginStoped) -> ServerResult<()> {
+        println!("received `plugin_stoped` from Xi core:\n{:?}", style);
+        Box::new(future::ok(()))
+    }
+    fn config_changed(&mut self, style: ConfigChanged) -> ServerResult<()> {
+        println!("received `config_changed` from Xi core:\n{:?}", style);
+        Box::new(future::ok(()))
+    }
+    fn theme_changed(&mut self, style: ThemeChanged) -> ServerResult<()> {
+        println!("received `theme_changed` from Xi core:\n{:?}", style);
         Box::new(future::ok(()))
     }
 }
