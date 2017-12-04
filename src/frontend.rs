@@ -2,7 +2,12 @@ use errors::ServerError;
 use protocol::Service;
 use futures::{future, Future};
 use serde_json::{from_value, Value};
-use structs::{ScrollTo, Style, Update};
+use structs::{
+    AvailablePlugins, PluginStarted, PluginStoped,
+    Update, ScrollTo, UpdateCmds, Style, ThemeChanged,
+    ConfigChanged
+
+};
 use client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
@@ -16,6 +21,18 @@ pub trait Frontend {
     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()>;
     /// handle `"def_style"` notifications from `xi-core`
     fn def_style(&mut self, style: Style) -> ServerResult<()>;
+    /// handle `"available_plugins"` notifications from `xi-core`
+    fn available_plugins(&mut self, plugins: AvailablePlugins) -> ServerResult<()>;
+    /// handle `"update_cmds"` notifications from `xi-core`
+    fn update_cmds(&mut self, plugins: UpdateCmds) -> ServerResult<()>;
+    /// handle `"plugin_started"` notifications from `xi-core`
+    fn plugin_started(&mut self, plugins: PluginStarted) -> ServerResult<()>;
+    /// handle `"plugin_stoped"` notifications from `xi-core`
+    fn plugin_stoped(&mut self, plugin: PluginStoped) -> ServerResult<()>;
+    /// handle `"config_changed"` notifications from `xi-core`
+    fn config_changed(&mut self, config: ConfigChanged) -> ServerResult<()>;
+    /// handle `"theme_changed"` notifications from `xi-core`
+    fn theme_changed(&mut self, theme: ThemeChanged) -> ServerResult<()>;
 }
 
 /// A builder for the type `F` that implement the `Frontend` trait.
@@ -63,6 +80,31 @@ impl<F: Frontend> Service for F {
                 Ok(style) => self.def_style(style),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
+            "available_plugins" => match from_value::<AvailablePlugins>(params) {
+                Ok(plugins) => self.available_plugins(plugins),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+            },
+            "plugin_started" => match from_value::<PluginStarted>(params) {
+                Ok(plugin) => self.plugin_started(plugin),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+            },
+            "plugin_stoped" => match from_value::<PluginStoped>(params) {
+                Ok(plugin) => self.plugin_stoped(plugin),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+            },
+            "update_cmds" => match from_value::<UpdateCmds>(params) {
+                Ok(cmds) => self.update_cmds(cmds),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            },
+            "config_changed" => match from_value::<ConfigChanged>(params) {
+                Ok(config) => self.config_changed(config),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+            },
+            "theme_changed" => match from_value::<ThemeChanged>(params) {
+                Ok(theme) => self.theme_changed(theme),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+            },
+
             _ => Box::new(future::err(ServerError::UnknownMethod(method.into()))),
         }
     }

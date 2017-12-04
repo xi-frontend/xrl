@@ -221,6 +221,14 @@ impl Client {
         Box::new(self.notify("set_theme", params).and_then(|_| Ok(())))
     }
 
+    pub fn client_started(&mut self, config_dir: Option<&str>) -> ClientResult<()> {
+        let params = match config_dir {
+            Some(path) => json!({"config_dir":path}),
+            None => json!({})
+        };
+        self.notify("client_started", params)
+    }
+
     pub fn start_plugin(&mut self, view_id: &str, name: &str) -> ClientResult<()> {
         let params = json!({"view_id": view_id, "plugin_name": name});
         Box::new(self.notify("start", params).and_then(|_| Ok(())))

@@ -89,6 +89,7 @@ extern crate serde_json;
 extern crate tokio_core;
 extern crate tokio_io;
 extern crate tokio_process;
+extern crate syntect;
 
 mod protocol;
 mod client;
@@ -101,4 +102,9 @@ pub use frontend::{Frontend, FrontendBuilder, ServerResult};
 pub use client::{Client, ClientResult};
 pub use errors::{ClientError, ServerError};
 pub use core::{spawn, CoreStderr};
-pub use structs::{Line, Operation, OperationType, ScrollTo, Style, StyleDef, Update};
+pub use structs::{
+    AvailablePlugins, PluginStarted, PluginStoped, ThemeChanged,
+    ThemeSettings,
+    UpdateCmds, ConfigChanged, ConfigChanges, ScrollTo, Position,
+    Update, Style, Operation, OperationType, Line, StyleDef,
+};
