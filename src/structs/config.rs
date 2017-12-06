@@ -1,6 +1,8 @@
+use ViewId;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConfigChanged {
-    view_id: String,
+    view_id: ViewId,
     changes: ConfigChanges
 }
 

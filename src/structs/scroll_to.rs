@@ -1,9 +1,11 @@
+use ViewId;
+
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct ScrollTo {
     pub line: u64,
     #[serde(rename = "col")]
     pub column: u64,
-    pub view_id: String,
+    pub view_id: ViewId,
 }
 
 #[test]

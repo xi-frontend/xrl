@@ -1,14 +1,14 @@
 use serde::{Deserialize, Deserializer};
 
-use super::operation::Operation;
-
+use Operation;
+use ViewId;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Update {
     pub rev: Option<u64>,
     pub operations: Vec<Operation>,
     pub pristine: bool,
-    pub view_id: String,
+    pub view_id: ViewId,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -22,7 +22,7 @@ struct InnerUpdate {
 #[derive(Deserialize, Debug, PartialEq)]
 struct UpdateHelper {
     pub update: InnerUpdate,
-    pub view_id: String,
+    pub view_id: ViewId,
 }
 
 impl<'de> Deserialize<'de> for Update {
