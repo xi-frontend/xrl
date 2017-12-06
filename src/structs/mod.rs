@@ -6,6 +6,7 @@ mod position;
 mod scroll_to;
 mod plugins;
 mod config;
+mod view;
 
 pub use self::line::{Line, StyleDef};
 pub use self::operation::{Operation, OperationType};
@@ -20,6 +21,7 @@ pub use self::plugins::PluginStoped;
 pub use self::plugins::UpdateCmds;
 pub use self::config::ConfigChanged;
 pub use self::config::ConfigChanges;
+pub use self::view::ViewId;
 
 pub type ThemeSettings = ::syntect::highlighting::ThemeSettings;
 
