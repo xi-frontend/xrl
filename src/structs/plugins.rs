@@ -2,7 +2,7 @@ use ViewId;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Plugin {
-    name: ViewId,
+    name: String,
     running: bool
 }
 
@@ -28,6 +28,6 @@ pub struct PluginStoped {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct UpdateCmds {
     cmds: Vec<String>,
-    plugin: ViewId,
-    view_id: String
+    plugin: String,
+    view_id: ViewId
 }
