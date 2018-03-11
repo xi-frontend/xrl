@@ -41,7 +41,7 @@ struct Server<S: Service> {
 impl<S: Service> Server<S> {
     fn new(service: S) -> Self {
         Server {
-            service: service,
+            service,
             request_tasks: HashMap::new(),
             notification_tasks: Vec::new(),
         }
@@ -164,8 +164,8 @@ impl InnerClient {
         let client = InnerClient {
             shutting_down: false,
             request_id: 0,
-            requests_rx: requests_rx,
-            notifications_rx: notifications_rx,
+            requests_rx,
+            notifications_rx,
             pending_requests: HashMap::new(),
             pending_notifications: Vec::new(),
         };
@@ -443,8 +443,8 @@ pub struct Client {
 impl Client {
     fn new(requests_tx: RequestTx, notifications_tx: NotificationTx) -> Self {
         Client {
-            requests_tx: requests_tx,
-            notifications_tx: notifications_tx,
+            requests_tx,
+            notifications_tx,
         }
     }
 
@@ -457,7 +457,7 @@ impl Client {
         let request = Request {
             id: 0,
             method: method.to_owned(),
-            params: params,
+            params,
         };
         let (tx, rx) = oneshot::channel();
         // If send returns an Err, its because the other side has been dropped.
@@ -476,7 +476,7 @@ impl Client {
         );
         let notification = Notification {
             method: method.to_owned(),
-            params: params,
+            params,
         };
         let (tx, rx) = oneshot::channel();
         let _ = mpsc::UnboundedSender::unbounded_send(&self.notifications_tx, (notification, tx));

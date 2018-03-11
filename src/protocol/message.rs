@@ -77,8 +77,8 @@ impl Notification {
         let params = map.remove("params").ok_or(DecodeError::InvalidMessage)?;
 
         Ok(Notification {
-            method: method,
-            params: params,
+            method,
+            params,
         })
     }
 }
@@ -102,9 +102,9 @@ impl Request {
             .ok_or(DecodeError::InvalidMessage)?;
 
         Ok(Request {
-            id: id,
-            method: method,
-            params: params,
+            id,
+            method,
+            params,
         })
     }
 }
@@ -128,8 +128,8 @@ impl Response {
             .ok_or(DecodeError::InvalidMessage)?;
 
         Ok(Response {
-            id: id,
-            result: result,
+            id,
+            result,
         })
     }
 }

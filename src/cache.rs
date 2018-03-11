@@ -1,6 +1,6 @@
 use {Line, Operation, OperationType, Update};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct LineCache {
     invalid_before: u64,
     lines: Vec<Line>,
@@ -8,13 +8,6 @@ pub struct LineCache {
 }
 
 impl LineCache {
-    pub fn new() -> Self {
-        LineCache {
-            invalid_before: 0,
-            lines: vec![],
-            invalid_after: 0,
-        }
-    }
 
     pub fn before(&self) -> u64 {
         self.invalid_before

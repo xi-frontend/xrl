@@ -35,7 +35,7 @@ impl<'de> Deserialize<'de> for Update {
                 rev: update.rev,
                 operations: update.operations,
                 pristine: update.pristine,
-                view_id: view_id,
+                view_id,
             }
         })
     }

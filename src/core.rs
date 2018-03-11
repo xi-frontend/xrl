@@ -66,8 +66,8 @@ where
     let stderr = xi_core.stderr().take().unwrap();
     let core = Core {
         core: xi_core,
-        stdout: stdout,
-        stdin: stdin,
+        stdout,
+        stdin,
     };
 
     let mut endpoint = Endpoint::new(core);
