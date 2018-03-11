@@ -27,4 +27,4 @@ syntect = { version = "1.8.1", default-features = false}
 
 [dependencies.clippy]
 optional = true
-version = "0.0.165"
+version = "0.0.187"
