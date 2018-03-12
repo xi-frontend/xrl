@@ -10,8 +10,8 @@ keywords = [
 license-file = "LICENSE-MIT"
 name = "xrl"
 readme = "README.md"
-repository = "https://github.com/xi-fronend/xrl"
-version = "0.0.4"
+repository = "https://github.com/xi-frontend/xrl"
+version = "0.0.5"
 
 [dependencies]
 bytes = "0.4.5"
