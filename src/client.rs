@@ -245,7 +245,7 @@ impl Client {
         view_id: ViewId,
         plugin: &str,
         method: &str,
-        params: Value,
+        params: &Value,
     ) -> ClientResult<()> {
         let params = json!({
             "view_id": view_id,

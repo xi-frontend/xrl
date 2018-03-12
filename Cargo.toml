@@ -1,7 +1,7 @@
 [package]
 authors = ["Corentin Henry <corentinhenry@gmail.com>"]
 description = "Xi Rpc Lib - Tokio based implementation of the RPC used in the Xi editor"
-homepage = "https://github.com/little-dude/xrl"
+homepage = "https://github.com/xi-frontend/xrl"
 keywords = [
     "xi",
     "rpc",
@@ -10,7 +10,7 @@ keywords = [
 license-file = "LICENSE-MIT"
 name = "xrl"
 readme = "README.md"
-repository = "https://github.com/little-dude/xrl"
+repository = "https://github.com/xi-fronend/xrl"
 version = "0.0.4"
 
 [dependencies]
@@ -27,4 +27,4 @@ syntect = { version = "1.8.1", default-features = false}
 
 [dependencies.clippy]
 optional = true
-version = "0.0.165"
+version = "0.0.187"

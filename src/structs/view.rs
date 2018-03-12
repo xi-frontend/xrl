@@ -10,7 +10,7 @@ use serde::de::Deserializer;
 use serde::de::Error;
 use serde::de::Visitor;
 
-/// Error Returned when a malformed ViewId is received.
+/// Error Returned when a malformed `ViewId` is received.
 #[derive(Debug, PartialEq)]
 pub struct IdParseError(String);
 
