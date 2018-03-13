@@ -2,7 +2,7 @@ use futures::{future, Future};
 use serde_json::Value;
 use errors::ClientError;
 use protocol;
-use serde_json::{from_value, to_value};
+use serde_json::{from_value, to_value, Map};
 use serde::Serialize;
 use structs::ViewId;
 
@@ -222,12 +222,15 @@ impl Client {
         Box::new(self.notify("set_theme", params).and_then(|_| Ok(())))
     }
 
-    pub fn client_started(&mut self, config_dir: Option<&str>) -> ClientResult<()> {
-        let params = match config_dir {
-            Some(path) => json!({"config_dir":path}),
-            None => json!({})
-        };
-        self.notify("client_started", params)
+    pub fn client_started(&mut self, config_dir: Option<&str>, client_extra_dir: Option<&str>) -> ClientResult<()> {
+        let mut params = Map::new();
+        if let Some(path) = config_dir {
+            let _ = params.insert("config_dir".into(), json!(path));
+        }
+        if let Some(path) = client_extra_dir {
+            let _ = params.insert("client_extra_dir".into(), json!(path));
+        }
+        self.notify("client_started", params.into())
     }
 
     pub fn start_plugin(&mut self, view_id: ViewId, name: &str) -> ClientResult<()> {
