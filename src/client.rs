@@ -142,7 +142,7 @@ impl Client {
     pub fn del(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(view_id, "delete_backward", None as Option<Value>)
     }
-
+    
     pub fn page_up(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(view_id, "scroll_page_up", None as Option<Value>)
     }
@@ -150,7 +150,7 @@ impl Client {
     pub fn page_up_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(
             view_id,
-            "scroll_page_up_and_modify_selection",
+            "page_up_and_modify_selection",
             None as Option<Value>,
         )
     }
@@ -162,9 +162,37 @@ impl Client {
     pub fn page_down_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(
             view_id,
-            "scroll_page_down_and_modify_selection",
+            "page_down_and_modify_selection",
             None as Option<Value>,
         )
+    }
+
+    pub fn line_start(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit(view_id, "move_to_left_end_of_line", None as Option<Value>)
+    }
+
+    pub fn line_start_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit(
+            view_id,
+            "move_to_left_end_of_line_and_modify_selection",
+            None as Option<Value>,
+        )
+    }
+
+    pub fn line_end(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit(view_id, "move_to_right_end_of_line", None as Option<Value>)
+    }
+
+    pub fn line_end_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit(
+            view_id,
+            "move_to_right_end_of_line_and_modify_selection",
+            None as Option<Value>,
+        )
+    }
+    
+    pub fn select_all(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit(view_id, "select_all", None as Option<Value>)
     }
 
     pub fn insert_newline(&mut self, view_id: ViewId) -> ClientResult<()> {
