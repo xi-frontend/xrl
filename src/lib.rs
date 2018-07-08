@@ -29,14 +29,38 @@
 //!         // to the core here with `self.client`
 //!         Box::new(future::ok(()))
 //!     }
+//!
 //!     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()> {
 //!         println!("received `scroll_to` from Xi core:\n{:?}", scroll_to);
 //!         Box::new(future::ok(()))
 //!     }
+//!
 //!     fn def_style(&mut self, style: Style) -> ServerResult<()> {
 //!         println!("received `set_style` from Xi core:\n{:?}", style);
 //!         Box::new(future::ok(()))
 //!     }
+//!
+//!    fn available_plugins(&mut self, plugins: AvailablePlugins) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!
+//!    fn update_cmds(&mut self, plugins: UpdateCmds) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!
+//!    fn plugin_started(&mut self, plugins: PluginStarted) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!
+//!    fn plugin_stoped(&mut self, plugin: PluginStoped) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!    fn config_changed(&mut self, config: ConfigChanged) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!    fn theme_changed(&mut self, theme: ThemeChanged) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
 //! }
 //!
 //! struct MyFrontendBuilder;

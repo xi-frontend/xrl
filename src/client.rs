@@ -9,7 +9,7 @@ use structs::ViewId;
 /// A future returned by all the `Client`'s method.
 pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError>>;
 
-/// A client to send notifications and request to the core
+/// A client to send notifications and request to xi-core.
 #[derive(Clone)]
 pub struct Client(pub protocol::Client);
 
@@ -142,7 +142,7 @@ impl Client {
     pub fn del(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(view_id, "delete_backward", None as Option<Value>)
     }
-    
+
     pub fn page_up(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(view_id, "scroll_page_up", None as Option<Value>)
     }
@@ -190,7 +190,7 @@ impl Client {
             None as Option<Value>,
         )
     }
-    
+
     pub fn select_all(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(view_id, "select_all", None as Option<Value>)
     }
