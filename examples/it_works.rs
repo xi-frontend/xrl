@@ -76,7 +76,7 @@ fn main() {
 
     // spawn Xi core
     let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {}, &handle);
-
+    core.run(client.client_started(None, None).map_err(|_|()));
     // start logging Xi core's stderr
     let log_core_errors = core_stderr
         .for_each(|msg| {
