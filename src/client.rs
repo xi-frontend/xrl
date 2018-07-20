@@ -7,7 +7,7 @@ use serde::Serialize;
 use structs::ViewId;
 
 /// A future returned by all the `Client`'s method.
-pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError>>;
+pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError> + Send>;
 
 /// A client to send notifications and request to xi-core.
 #[derive(Clone)]
@@ -75,7 +75,7 @@ impl Client {
     }
 
     /// Send an "scroll" notification
-    /// ```
+    /// ```ignore
     /// {"method":"edit","params":{"method":"scroll","params":[21,80],
     /// "view_id":"view-id-1"}}
     /// ```
@@ -221,7 +221,7 @@ impl Client {
     }
 
     /// send a `"new_view"` request to the core.
-    /// ```
+    /// ```ignore
     /// {"id":1,"method":"new_view","params":{"file_path":"foo/test.txt"}}
     /// ```
     pub fn new_view(&mut self, file_path: Option<String>) -> ClientResult<ViewId> {

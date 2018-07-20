@@ -1,6 +1,6 @@
 use std::io;
 use bytes::{BufMut, BytesMut};
-use tokio_io::codec::{Decoder, Encoder};
+use tokio_codec::{Decoder, Encoder};
 
 use super::errors::DecodeError;
 use super::message::Message;

@@ -5,8 +5,8 @@ use std::io;
 
 use futures::{Async, AsyncSink, Future, Poll, Sink, StartSend, Stream};
 use futures::sync::{mpsc, oneshot};
-use tokio_io::codec::Framed;
-use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_codec::{Framed, Decoder};
+use tokio::io::{AsyncRead, AsyncWrite};
 use serde_json::Value;
 
 use super::message::{Message, Notification, Request};
@@ -14,7 +14,7 @@ use super::message::Response as ResponseMessage;
 use super::codec::Codec;
 use super::errors::RpcError;
 
-pub trait Service {
+pub trait Service: Send {
     type Error: Error;
     type T: Into<Value>;
     type E: Into<Value>;
@@ -32,11 +32,13 @@ pub trait Service {
     ) -> Box<Future<Item = (), Error = Self::Error>>;
 }
 
-struct Server<S: Service> {
+struct Server<S: Service + Send> {
     service: S,
     request_tasks: HashMap<u64, Box<Future<Item = Result<S::T, S::E>, Error = S::Error>>>,
     notification_tasks: Vec<Box<Future<Item = (), Error = S::Error>>>,
 }
+
+unsafe impl <T: Service>Send for Server<T> {}
 
 impl<S: Service> Server<S> {
     fn new(service: S) -> Self {
@@ -320,7 +322,7 @@ where
 {
     pub fn new(stream: T) -> Self {
         Endpoint {
-            stream: RefCell::new(Transport(stream.framed(Codec))),
+            stream: RefCell::new(Transport(Codec.framed(stream))),
             client: None,
             server: None,
         }

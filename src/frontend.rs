@@ -43,7 +43,7 @@ where
     fn build(self, client: Client) -> F;
 }
 
-impl<F: Frontend> Service for F {
+impl<F: Frontend + Send> Service for F {
     type T = Value;
     type E = Value;
     type Error = ServerError;
