@@ -8,11 +8,10 @@
 //!
 //! #![allow(unused_variables)]
 //! extern crate futures;
-//! extern crate tokio_core;
+//! extern crate tokio;
 //! extern crate xrl;
 //!
 //! use futures::{future, Future, Stream};
-//! use tokio_core::reactor::Core;
 //! use xrl::*;
 //!
 //!
@@ -29,14 +28,38 @@
 //!         // to the core here with `self.client`
 //!         Box::new(future::ok(()))
 //!     }
+//!
 //!     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()> {
 //!         println!("received `scroll_to` from Xi core:\n{:?}", scroll_to);
 //!         Box::new(future::ok(()))
 //!     }
+//!
 //!     fn def_style(&mut self, style: Style) -> ServerResult<()> {
 //!         println!("received `set_style` from Xi core:\n{:?}", style);
 //!         Box::new(future::ok(()))
 //!     }
+//!
+//!    fn available_plugins(&mut self, plugins: AvailablePlugins) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!
+//!    fn update_cmds(&mut self, plugins: UpdateCmds) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!
+//!    fn plugin_started(&mut self, plugins: PluginStarted) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!
+//!    fn plugin_stoped(&mut self, plugin: PluginStoped) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!    fn config_changed(&mut self, config: ConfigChanged) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
+//!    fn theme_changed(&mut self, theme: ThemeChanged) -> ServerResult<()> {
+//!        Box::new(future::ok(()))
+//!    }
 //! }
 //!
 //! struct MyFrontendBuilder;
@@ -48,13 +71,12 @@
 //! }
 //!
 //! fn main() {
-//!     let mut core = Core::new().unwrap();
-//!     let handle = core.handle();
 //!
 //!     // spawn Xi core
-//! let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {},
-//! &handle);
+//!     let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
 //!
+//!     // All clients must send client_started notification first
+//!     tokio::run(client.client_started(None, None).map_err(|_|()));
 //!     // start logging Xi core's stderr
 //!     let log_core_errors = core_stderr
 //!         .for_each(|msg| {
@@ -62,13 +84,16 @@
 //!             Ok(())
 //!         })
 //!         .map_err(|_| ());
-//!     core.handle().spawn(log_core_errors);
+//!
+//!     ::std::thread::spawn(move || {
+//!         tokio::run(log_core_errors);
+//!     });
 //!
 //!     // Send a request to open a new view, and print the result
 //!     let open_new_view = client
 //!         .new_view(None)
 //!         .map(|view_name| println!("opened new view: {}", view_name));
-//!     core.run(open_new_view).unwrap();
+//!     tokio::run(open_new_view.map_err(|_| ()));
 //! }
 //! ```
 #![cfg_attr(feature = "clippy", feature(plugin))]
@@ -86,9 +111,9 @@ extern crate serde;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
-extern crate tokio_core;
-extern crate tokio_io;
+extern crate tokio;
 extern crate tokio_process;
+extern crate tokio_codec;
 extern crate syntect;
 
 mod protocol;

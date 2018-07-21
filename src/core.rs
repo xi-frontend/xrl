@@ -5,9 +5,10 @@ use client::Client;
 use std::io::{self, Read, Write};
 use std::process::Command;
 use std::process::Stdio;
-use tokio_io::{codec, AsyncRead, AsyncWrite};
+use tokio;
+use tokio::io::{AsyncRead, AsyncWrite};
+use tokio_codec::{FramedRead, Decoder};
 use tokio_process::{Child, ChildStderr, ChildStdin, ChildStdout, CommandExt};
-use tokio_core::reactor::Handle;
 use frontend::{Frontend, FrontendBuilder};
 use std::clone::Clone;
 
@@ -48,17 +49,17 @@ impl AsyncWrite for Core {
 }
 
 /// Start Xi core, and return a client and a stream of Xi's stderr lines.
-pub fn spawn<B, F>(executable: &str, builder: B, handle: &Handle) -> (Client, CoreStderr)
+pub fn spawn<B, F>(executable: &str, builder: B) -> (Client, CoreStderr)
 where
     B: FrontendBuilder<F> + 'static,
-    F: Frontend + 'static,
+    F: Frontend + 'static + Send,
 {
     let mut xi_core = Command::new(executable)
         .stdout(Stdio::piped())
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
         .env("RUST_BACKTRACE", "1")
-        .spawn_async(handle)
+        .spawn_async()
         .expect("failed to spawn xi-core");
 
     let stdout = xi_core.stdout().take().unwrap();
@@ -74,15 +75,17 @@ where
     let client = Client(endpoint.set_client());
     let service = builder.build(client.clone());
     endpoint.set_server(service);
-    handle.spawn(endpoint.map_err(|_| ()));
+    ::std::thread::spawn(move || {
+        tokio::run(endpoint.map_err(|_| ()));
+    });
     (client, CoreStderr::new(stderr))
 }
 
-struct LineCodec;
+pub struct LineCodec;
 
 // straight from
 // https://github.com/tokio-rs/tokio-line/blob/master/simple/src/lib.rs
-impl codec::Decoder for LineCodec {
+impl Decoder for LineCodec {
     type Item = String;
     type Error = io::Error;
 
@@ -100,11 +103,11 @@ impl codec::Decoder for LineCodec {
 }
 
 /// A stream of Xi core stderr lines
-pub struct CoreStderr(codec::FramedRead<ChildStderr, LineCodec>);
+pub struct CoreStderr(FramedRead<ChildStderr, LineCodec>);
 
 impl CoreStderr {
     fn new(stderr: ChildStderr) -> Self {
-        CoreStderr(codec::FramedRead::new(stderr, LineCodec {}))
+        CoreStderr(FramedRead::new(stderr, LineCodec {}))
     }
 }
 

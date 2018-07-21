@@ -1,10 +1,9 @@
 #![allow(unused_variables)]
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio;
 extern crate xrl;
 
 use futures::{future, Future, Stream};
-use tokio_core::reactor::Core;
 use xrl::{
     Update, ScrollTo, Style,
     AvailablePlugins, UpdateCmds,
@@ -71,24 +70,26 @@ impl FrontendBuilder<MyFrontend> for MyFrontendBuilder {
 }
 
 fn main() {
-    let mut core = Core::new().unwrap();
-    let handle = core.handle();
-
     // spawn Xi core
-    let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {}, &handle);
+    let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
 
+    // All clients must send client_started notification first
+    tokio::run(client.client_started(None, None).map_err(|_|()));
     // start logging Xi core's stderr
     let log_core_errors = core_stderr
         .for_each(|msg| {
             println!("xi-core stderr: {}", msg);
             Ok(())
-        })
-        .map_err(|_| ());
-    core.handle().spawn(log_core_errors);
-
+        }).map_err(|_|());
+    ::std::thread::spawn(move || {
+        tokio::run(log_core_errors);
+    });
     // Send a request to open a new view, and print the result
     let open_new_view = client
         .new_view(None)
-        .map(|view_name| println!("opened new view: {}", view_name));
-    core.run(open_new_view).unwrap();
+        .map(|view_name| println!("opened new view: {}", view_name))
+        .map_err(|_|());
+    tokio::run(open_new_view);
+    // sleep until xi-requests are received
+    ::std::thread::sleep(::std::time::Duration::new(5, 0));
 }

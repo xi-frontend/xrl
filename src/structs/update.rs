@@ -45,7 +45,8 @@ impl<'de> Deserialize<'de> for Update {
 #[test]
 fn deserialize_update() {
     use serde_json;
-
+    use std::str::FromStr;
+    
     use super::Line;
     use super::operation::{Operation, OperationType};
 
@@ -77,7 +78,7 @@ fn deserialize_update() {
         ],
         pristine: true,
         rev: None,
-        view_id: "view-id-1".to_string(),
+        view_id: FromStr::from_str("view-id-1").unwrap(),
     };
     let deserialized: Result<Update, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), update);

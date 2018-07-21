@@ -1,5 +1,6 @@
 use {Line, Operation, OperationType, Update};
 
+/// Line cache struct to work with xi update protocol.
 #[derive(Clone, Debug, Default)]
 pub struct LineCache {
     invalid_before: u64,
@@ -9,18 +10,24 @@ pub struct LineCache {
 
 impl LineCache {
 
+    /// Retrieve the number of invalid lines before
+    /// the start of the line cache.
     pub fn before(&self) -> u64 {
         self.invalid_before
     }
 
+    /// Retrieve the number of invalid lines after
+    /// the line cache.
     pub fn after(&self) -> u64 {
         self.invalid_after
     }
 
+    /// Retrieve all lines in the cache.
     pub fn lines(&self) -> &Vec<Line> {
         &self.lines
     }
 
+    /// Handle an xi-core update.
     pub fn update(&mut self, update: Update) {
         let LineCache {
             ref mut lines,
