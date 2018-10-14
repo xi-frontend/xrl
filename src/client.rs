@@ -83,6 +83,10 @@ impl Client {
         self.edit(view_id, "scroll", Some(json!([first_line, last_line])))
     }
 
+    pub fn goto_line(&mut self, view_id: ViewId, line: u64) -> ClientResult<()> {
+        self.edit(view_id, "goto_line", Some(json!({"line": line})))
+    }
+
     pub fn left(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(view_id, "move_left", None as Option<Value>)
     }
