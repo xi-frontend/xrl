@@ -13,7 +13,7 @@ pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError> + Send>;
 #[derive(Clone)]
 pub struct Client(pub protocol::Client);
 
-fn get_edit_params<T: Serialize>(
+pub fn get_edit_params<T: Serialize>(
     view_id: ViewId,
     method: &str,
     params: Option<T>,
@@ -59,6 +59,17 @@ impl Client {
         ))
     }
 
+    pub fn ask<T: Serialize>(
+        &mut self,
+        view_id: ViewId,
+        method: &str,
+        params: Option<T>)-> ClientResult<Value> {
+            match get_edit_params(view_id, method, params) {
+            Ok(value) => self.request("edit", value),
+            Err(e) => Box::new(future::err(e)),
+        }
+    }
+
     /// Send an "edit" notification. Most (if not all) "edit" commands are
     /// already implemented, so this method should not be necessary in most
     /// cases.
@@ -85,6 +96,18 @@ impl Client {
 
     pub fn goto_line(&mut self, view_id: ViewId, line: u64) -> ClientResult<()> {
         self.edit(view_id, "goto_line", Some(json!({"line": line})))
+    }
+
+    pub fn copy(&mut self, view_id: ViewId) -> ClientResult<Value> {
+        self.ask(view_id, "copy", None as Option<Value>)
+    }
+
+    pub fn paste(&mut self, view_id: ViewId, buffer: &str) -> ClientResult<()> {
+        self.edit(view_id, "paste", Some(json!({"chars": buffer})))
+    }
+
+    pub fn cut(&mut self, view_id: ViewId) -> ClientResult<Value> {
+        self.ask(view_id, "cut", None as Option<Value>)
     }
 
     pub fn left(&mut self, view_id: ViewId) -> ClientResult<()> {
