@@ -110,6 +110,14 @@ impl Client {
         self.ask(view_id, "cut", None as Option<Value>)
     }
 
+    pub fn undo(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit(view_id, "undo", None as Option<Value>)
+    }
+
+    pub fn redo(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit(view_id, "redo", None as Option<Value>)
+    }
+
     pub fn left(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit(view_id, "move_left", None as Option<Value>)
     }
