@@ -13,7 +13,7 @@ pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError> + Send>;
 #[derive(Clone)]
 pub struct Client(pub protocol::Client);
 
-pub fn get_edit_params<T: Serialize>(
+fn get_edit_params<T: Serialize>(
     view_id: ViewId,
     method: &str,
     params: Option<T>,
