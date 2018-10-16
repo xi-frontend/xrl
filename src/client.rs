@@ -65,8 +65,8 @@ impl Client {
         method: &str,
         params: Option<T>)-> ClientResult<Value> {
             match get_edit_params(view_id, method, params) {
-            Ok(value) => self.request("edit", value),
-            Err(e) => Box::new(future::err(e)),
+                Ok(value) => self.request("edit", value),
+                Err(e) => Box::new(future::err(e)),
         }
     }
 
