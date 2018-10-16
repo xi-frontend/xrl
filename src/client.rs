@@ -59,10 +59,21 @@ impl Client {
         ))
     }
 
+    pub fn edit_request<T: Serialize>(
+        &mut self,
+        view_id: ViewId,
+        method: &str,
+        params: Option<T>)-> ClientResult<Value> {
+            match get_edit_params(view_id, method, params) {
+                Ok(value) => self.request("edit", value),
+                Err(e) => Box::new(future::err(e)),
+        }
+    }
+
     /// Send an "edit" notification. Most (if not all) "edit" commands are
     /// already implemented, so this method should not be necessary in most
     /// cases.
-    pub fn edit<T: Serialize>(
+    pub fn edit_notify<T: Serialize>(
         &mut self,
         view_id: ViewId,
         method: &str,
@@ -80,15 +91,39 @@ impl Client {
     /// "view_id":"view-id-1"}}
     /// ```
     pub fn scroll(&mut self, view_id: ViewId, first_line: u64, last_line: u64) -> ClientResult<()> {
-        self.edit(view_id, "scroll", Some(json!([first_line, last_line])))
+        self.edit_notify(view_id, "scroll", Some(json!([first_line, last_line])))
+    }
+
+    pub fn goto_line(&mut self, view_id: ViewId, line: u64) -> ClientResult<()> {
+        self.edit_notify(view_id, "goto_line", Some(json!({"line": line})))
+    }
+
+    pub fn copy(&mut self, view_id: ViewId) -> ClientResult<Value> {
+        self.edit_request(view_id, "copy", None as Option<Value>)
+    }
+
+    pub fn paste(&mut self, view_id: ViewId, buffer: &str) -> ClientResult<()> {
+        self.edit_notify(view_id, "paste", Some(json!({"chars": buffer})))
+    }
+
+    pub fn cut(&mut self, view_id: ViewId) -> ClientResult<Value> {
+        self.edit_request(view_id, "cut", None as Option<Value>)
+    }
+
+    pub fn undo(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit_notify(view_id, "undo", None as Option<Value>)
+    }
+
+    pub fn redo(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit_notify(view_id, "redo", None as Option<Value>)
     }
 
     pub fn left(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "move_left", None as Option<Value>)
+        self.edit_notify(view_id, "move_left", None as Option<Value>)
     }
 
     pub fn left_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(
+        self.edit_notify(
             view_id,
             "move_left_and_modify_selection",
             None as Option<Value>,
@@ -96,11 +131,11 @@ impl Client {
     }
 
     pub fn right(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "move_right", None as Option<Value>)
+        self.edit_notify(view_id, "move_right", None as Option<Value>)
     }
 
     pub fn right_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(
+        self.edit_notify(
             view_id,
             "move_right_and_modify_selection",
             None as Option<Value>,
@@ -108,11 +143,11 @@ impl Client {
     }
 
     pub fn up(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "move_up", None as Option<Value>)
+        self.edit_notify(view_id, "move_up", None as Option<Value>)
     }
 
     pub fn up_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(
+        self.edit_notify(
             view_id,
             "move_up_and_modify_selection",
             None as Option<Value>,
@@ -120,11 +155,11 @@ impl Client {
     }
 
     pub fn down(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "move_down", None as Option<Value>)
+        self.edit_notify(view_id, "move_down", None as Option<Value>)
     }
 
     pub fn down_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(
+        self.edit_notify(
             view_id,
             "move_down_and_modify_selection",
             None as Option<Value>,
@@ -136,19 +171,19 @@ impl Client {
     }
 
     pub fn delete(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "delete_forward", None as Option<Value>)
+        self.edit_notify(view_id, "delete_forward", None as Option<Value>)
     }
 
     pub fn del(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "delete_backward", None as Option<Value>)
+        self.edit_notify(view_id, "delete_backward", None as Option<Value>)
     }
 
     pub fn page_up(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "scroll_page_up", None as Option<Value>)
+        self.edit_notify(view_id, "scroll_page_up", None as Option<Value>)
     }
 
     pub fn page_up_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(
+        self.edit_notify(
             view_id,
             "page_up_and_modify_selection",
             None as Option<Value>,
@@ -156,11 +191,11 @@ impl Client {
     }
 
     pub fn page_down(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "scroll_page_down", None as Option<Value>)
+        self.edit_notify(view_id, "scroll_page_down", None as Option<Value>)
     }
 
     pub fn page_down_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(
+        self.edit_notify(
             view_id,
             "page_down_and_modify_selection",
             None as Option<Value>,
@@ -168,11 +203,11 @@ impl Client {
     }
 
     pub fn line_start(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "move_to_left_end_of_line", None as Option<Value>)
+        self.edit_notify(view_id, "move_to_left_end_of_line", None as Option<Value>)
     }
 
     pub fn line_start_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(
+        self.edit_notify(
             view_id,
             "move_to_left_end_of_line_and_modify_selection",
             None as Option<Value>,
@@ -180,11 +215,11 @@ impl Client {
     }
 
     pub fn line_end(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "move_to_right_end_of_line", None as Option<Value>)
+        self.edit_notify(view_id, "move_to_right_end_of_line", None as Option<Value>)
     }
 
     pub fn line_end_sel(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(
+        self.edit_notify(
             view_id,
             "move_to_right_end_of_line_and_modify_selection",
             None as Option<Value>,
@@ -192,32 +227,32 @@ impl Client {
     }
 
     pub fn select_all(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "select_all", None as Option<Value>)
+        self.edit_notify(view_id, "select_all", None as Option<Value>)
     }
 
     pub fn insert_newline(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "insert_newline", None as Option<Value>)
+        self.edit_notify(view_id, "insert_newline", None as Option<Value>)
     }
 
     pub fn f1(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "debug_rewrap", None as Option<Value>)
+        self.edit_notify(view_id, "debug_rewrap", None as Option<Value>)
     }
 
     pub fn f2(&mut self, view_id: ViewId) -> ClientResult<()> {
-        self.edit(view_id, "debug_test_fg_spans", None as Option<Value>)
+        self.edit_notify(view_id, "debug_test_fg_spans", None as Option<Value>)
     }
 
     pub fn char(&mut self, view_id: ViewId, ch: char) -> ClientResult<()> {
-        self.edit(view_id, "insert", Some(json!({ "chars": ch })))
+        self.edit_notify(view_id, "insert", Some(json!({ "chars": ch })))
     }
 
     // FIXME: handle modifier and click count
     pub fn click(&mut self, view_id: ViewId, line: u64, column: u64) -> ClientResult<()> {
-        self.edit(view_id, "click", Some(json!([line, column, 0, 1])))
+        self.edit_notify(view_id, "click", Some(json!([line, column, 0, 1])))
     }
 
     pub fn drag(&mut self, view_id: ViewId, line: u64, column: u64) -> ClientResult<()> {
-        self.edit(view_id, "drag", Some(json!([line, column, 0])))
+        self.edit_notify(view_id, "drag", Some(json!([line, column, 0])))
     }
 
     /// send a `"new_view"` request to the core.
