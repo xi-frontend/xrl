@@ -59,7 +59,7 @@ impl Client {
         ))
     }
 
-    pub fn ask<T: Serialize>(
+    pub fn edit_request<T: Serialize>(
         &mut self,
         view_id: ViewId,
         method: &str,
@@ -99,7 +99,7 @@ impl Client {
     }
 
     pub fn copy(&mut self, view_id: ViewId) -> ClientResult<Value> {
-        self.ask(view_id, "copy", None as Option<Value>)
+        self.edit_request(view_id, "copy", None as Option<Value>)
     }
 
     pub fn paste(&mut self, view_id: ViewId, buffer: &str) -> ClientResult<()> {
@@ -107,7 +107,7 @@ impl Client {
     }
 
     pub fn cut(&mut self, view_id: ViewId) -> ClientResult<Value> {
-        self.ask(view_id, "cut", None as Option<Value>)
+        self.edit_request(view_id, "cut", None as Option<Value>)
     }
 
     pub fn undo(&mut self, view_id: ViewId) -> ClientResult<()> {
