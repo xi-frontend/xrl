@@ -4,7 +4,7 @@ use errors::ClientError;
 use protocol;
 use serde_json::{from_value, to_value, Map};
 use serde::Serialize;
-use structs::ViewId;
+use structs::{ModifySelection, ViewId};
 
 /// A future returned by all the `Client`'s method.
 pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError> + Send>;
@@ -116,6 +116,81 @@ impl Client {
 
     pub fn redo(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "redo", None as Option<Value>)
+    }
+
+    pub fn find(
+        &mut self,
+        view_id: ViewId,
+        search_term: &str,
+        case_sensitive: bool,
+        regex: bool,
+        whole_words: bool,
+    ) -> ClientResult<()> {
+        self.edit_notify(
+            view_id,
+            "find",
+            Some(json!({
+                "chars": search_term,
+                "case_sensitive": case_sensitive,
+                "regex": regex,
+                "whole_words": whole_words}))
+        )
+    }
+
+    fn find_other(
+        &mut self,
+        view_id: ViewId,
+        command: &str,
+        wrap_around: bool,
+        allow_same: bool,
+        modify_selection: ModifySelection,
+    ) -> ClientResult<()> {
+        self.edit_notify(
+            view_id,
+            command,
+            Some(json!({
+                "wrap_around": wrap_around,
+                "allow_same": allow_same,
+                "modify_selection": modify_selection}))
+        )
+    }
+
+    pub fn find_next(
+        &mut self,
+        view_id: ViewId,
+        wrap_around: bool,
+        allow_same: bool,
+        modify_selection: ModifySelection,
+    ) -> ClientResult<()> {
+        self.find_other(
+            view_id,
+            "find_next",
+            wrap_around,
+            allow_same,
+            modify_selection)
+    }
+
+    pub fn find_prev(
+        &mut self,
+        view_id: ViewId,
+        wrap_around: bool,
+        allow_same: bool,
+        modify_selection: ModifySelection,
+    ) -> ClientResult<()> {
+        self.find_other(
+            view_id,
+            "find_previous",
+            wrap_around,
+            allow_same,
+            modify_selection)
+    }
+
+    pub fn find_all(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit_notify(view_id, "find_all", None as Option<Value>)
+    }
+
+    pub fn highlight_find(&mut self, view_id: ViewId, visible: bool) -> ClientResult<()> {
+        self.edit_notify(view_id, "highlight_find", Some(json!({"visible": visible})))
     }
 
     pub fn left(&mut self, view_id: ViewId) -> ClientResult<()> {

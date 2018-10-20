@@ -134,5 +134,5 @@ pub use structs::{
     ThemeSettings,
     UpdateCmds, ConfigChanged, ConfigChanges, ScrollTo, Position,
     Update, Style, Operation, OperationType, Line, StyleDef,
-    ViewId,
+    ViewId, ModifySelection,
 };
