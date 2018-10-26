@@ -309,6 +309,10 @@ impl Client {
         self.edit_notify(view_id, "insert_newline", None as Option<Value>)
     }
 
+    pub fn insert_tab(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit_notify(view_id, "insert_tab", None as Option<Value>)
+    }
+
     pub fn f1(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "debug_rewrap", None as Option<Value>)
     }
