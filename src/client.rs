@@ -334,6 +334,104 @@ impl Client {
         self.edit_notify(view_id, "click", Some(json!([line, column, 0, 1])))
     }
 
+    pub fn click_point_select(
+        &mut self,
+        view_id: ViewId,
+        line: u64,
+        column: u64,
+    ) -> ClientResult<()> {
+        let ty = "point_select";
+        self.edit_notify(
+            view_id,
+            "gesture",
+            Some(json!({"line": line, "col": column, "ty": ty,})),
+        )
+    }
+
+    pub fn click_toggle_sel(
+        &mut self,
+        view_id: ViewId,
+        line: u64,
+        column: u64,
+    ) -> ClientResult<()> {
+        let ty = "toggle_sel";
+        self.edit_notify(
+            view_id,
+            "gesture",
+            Some(json!({"line": line, "col": column, "ty": ty,})),
+        )
+    }
+
+    pub fn click_range_select(
+        &mut self,
+        view_id: ViewId,
+        line: u64,
+        column: u64,
+    ) -> ClientResult<()> {
+        let ty = "range_select";
+        self.edit_notify(
+            view_id,
+            "gesture",
+            Some(json!({"line": line, "col": column, "ty": ty,})),
+        )
+    }
+
+    pub fn click_line_select(
+        &mut self,
+        view_id: ViewId,
+        line: u64,
+        column: u64,
+    ) -> ClientResult<()> {
+        let ty = "range_select";
+        self.edit_notify(
+            view_id,
+            "gesture",
+            Some(json!({"line": line, "col": column, "ty": ty,})),
+        )
+    }
+
+    pub fn click_word_select(
+        &mut self,
+        view_id: ViewId,
+        line: u64,
+        column: u64,
+    ) -> ClientResult<()> {
+        let ty = "word_select";
+        self.edit_notify(
+            view_id,
+            "gesture",
+            Some(json!({"line": line, "col": column, "ty": ty,})),
+        )
+    }
+
+    pub fn click_multi_line_select(
+        &mut self,
+        view_id: ViewId,
+        line: u64,
+        column: u64,
+    ) -> ClientResult<()> {
+        let ty = "multi_line_select";
+        self.edit_notify(
+            view_id,
+            "gesture",
+            Some(json!({"line": line, "col": column, "ty": ty,})),
+        )
+    }
+
+    pub fn click_multi_word_select(
+        &mut self,
+        view_id: ViewId,
+        line: u64,
+        column: u64,
+    ) -> ClientResult<()> {
+        let ty = "multi_word_select";
+        self.edit_notify(
+            view_id,
+            "gesture",
+            Some(json!({"line": line, "col": column, "ty": ty,})),
+        )
+    }
+
     pub fn drag(&mut self, view_id: ViewId, line: u64, column: u64) -> ClientResult<()> {
         self.edit_notify(view_id, "drag", Some(json!([line, column, 0])))
     }
