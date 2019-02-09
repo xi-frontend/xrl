@@ -305,6 +305,10 @@ impl Client {
         self.edit_notify(view_id, "select_all", None as Option<Value>)
     }
 
+    pub fn collapse_selections(&mut self, view_id: ViewId) -> ClientResult<()> {
+        self.edit_notify(view_id, "collapse_selections", None as Option<Value>)
+    }
+
     pub fn insert_newline(&mut self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "insert_newline", None as Option<Value>)
     }
