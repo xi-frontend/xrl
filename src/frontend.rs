@@ -12,10 +12,23 @@ use client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
 
+/// Represents RPC messages recieved from xi-core.
+pub enum XiEvent {
+    Update(Update),
+    ScrollTo(ScrollTo),
+    DefStyle(Style),
+    AvailablePlugins(AvailablePlugins),
+    UpdateCmds(UpdateCmds),
+    PluginStarted(PluginStarted),
+    PluginStoped(PluginStoped),
+    ConfigChanged(ConfigChanged),
+    ThemeChanged(ThemeChanged)
+}
+
 /// The `Frontend` trait must be implemented by clients. It defines how the
 /// client handles notifications and requests coming from `xi-core`.
 pub trait Frontend {
-    /// handle `"updates"` notifications from `xi-core`
+/*    /// handle `"updates"` notifications from `xi-core`
     fn update(&mut self, update: Update) -> ServerResult<()>;
     /// handle `"scroll_to"` notifications from `xi-core`
     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()>;
@@ -32,7 +45,9 @@ pub trait Frontend {
     /// handle `"config_changed"` notifications from `xi-core`
     fn config_changed(&mut self, config: ConfigChanged) -> ServerResult<()>;
     /// handle `"theme_changed"` notifications from `xi-core`
-    fn theme_changed(&mut self, theme: ThemeChanged) -> ServerResult<()>;
+    fn theme_changed(&mut self, theme: ThemeChanged) -> ServerResult<()>; */
+
+    fn handle_event(&mut self, e: XiEvent) -> ServerResult<()>;
 }
 
 /// A builder for the type `F` that implement the `Frontend` trait.
@@ -67,41 +82,41 @@ impl<F: Frontend + Send> Service for F {
         info!("<<< notification: method={}, params={}", method, &params);
         match method {
             "update" => match from_value::<Update>(params) {
-                Ok(update) => self.update(update),
+                Ok(update) => self.handle_event(XiEvent::Update(update)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
 
             "scroll_to" => match from_value::<ScrollTo>(params) {
-                Ok(scroll_to) => self.scroll_to(scroll_to),
+                Ok(scroll_to) => self.handle_event(XiEvent::ScrollTo(scroll_to)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
 
             "def_style" => match from_value::<Style>(params) {
-                Ok(style) => self.def_style(style),
+                Ok(style) => self.handle_event(XiEvent::DefStyle(style)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "available_plugins" => match from_value::<AvailablePlugins>(params) {
-                Ok(plugins) => self.available_plugins(plugins),
+                Ok(plugins) => self.handle_event(XiEvent::AvailablePlugins(plugins)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
             },
             "plugin_started" => match from_value::<PluginStarted>(params) {
-                Ok(plugin) => self.plugin_started(plugin),
+                Ok(plugin) => self.handle_event(XiEvent::PluginStarted(plugin)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
             },
             "plugin_stoped" => match from_value::<PluginStoped>(params) {
-                Ok(plugin) => self.plugin_stoped(plugin),
+                Ok(plugin) => self.handle_event(XiEvent::PluginStoped(plugin)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
             },
             "update_cmds" => match from_value::<UpdateCmds>(params) {
-                Ok(cmds) => self.update_cmds(cmds),
+                Ok(cmds) => self.handle_event(XiEvent::UpdateCmds(cmds)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "config_changed" => match from_value::<ConfigChanged>(params) {
-                Ok(config) => self.config_changed(config),
+                Ok(config) => self.handle_event(XiEvent::ConfigChanged(config)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
             },
             "theme_changed" => match from_value::<ThemeChanged>(params) {
-                Ok(theme) => self.theme_changed(theme),
+                Ok(theme) => self.handle_event(XiEvent::ThemeChanged(theme)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
             },
 
