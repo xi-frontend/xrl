@@ -12,7 +12,7 @@ use client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
 
-/// Represents RPC messages recieved from xi-core.
+/// Represents all possible RPC messages recieved from xi-core.
 pub enum XiEvent {
     Update(Update),
     ScrollTo(ScrollTo),
@@ -28,24 +28,6 @@ pub enum XiEvent {
 /// The `Frontend` trait must be implemented by clients. It defines how the
 /// client handles notifications and requests coming from `xi-core`.
 pub trait Frontend {
-/*    /// handle `"updates"` notifications from `xi-core`
-    fn update(&mut self, update: Update) -> ServerResult<()>;
-    /// handle `"scroll_to"` notifications from `xi-core`
-    fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()>;
-    /// handle `"def_style"` notifications from `xi-core`
-    fn def_style(&mut self, style: Style) -> ServerResult<()>;
-    /// handle `"available_plugins"` notifications from `xi-core`
-    fn available_plugins(&mut self, plugins: AvailablePlugins) -> ServerResult<()>;
-    /// handle `"update_cmds"` notifications from `xi-core`
-    fn update_cmds(&mut self, plugins: UpdateCmds) -> ServerResult<()>;
-    /// handle `"plugin_started"` notifications from `xi-core`
-    fn plugin_started(&mut self, plugins: PluginStarted) -> ServerResult<()>;
-    /// handle `"plugin_stoped"` notifications from `xi-core`
-    fn plugin_stoped(&mut self, plugin: PluginStoped) -> ServerResult<()>;
-    /// handle `"config_changed"` notifications from `xi-core`
-    fn config_changed(&mut self, config: ConfigChanged) -> ServerResult<()>;
-    /// handle `"theme_changed"` notifications from `xi-core`
-    fn theme_changed(&mut self, theme: ThemeChanged) -> ServerResult<()>; */
 
     fn handle_event(&mut self, e: XiEvent) -> ServerResult<()>;
 }
