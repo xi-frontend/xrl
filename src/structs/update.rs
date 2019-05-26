@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 
-use Operation;
-use ViewId;
+use crate::Operation;
+use crate::ViewId;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Update {

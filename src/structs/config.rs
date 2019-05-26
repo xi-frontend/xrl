@@ -1,4 +1,4 @@
-use ViewId;
+use crate::ViewId;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConfigChanged {

@@ -1,14 +1,14 @@
-use errors::ServerError;
-use protocol::Service;
+use crate::errors::ServerError;
+use crate::protocol::Service;
 use futures::{future, Future};
 use serde_json::{from_value, Value};
-use structs::{
+use crate::structs::{
     AvailablePlugins, PluginStarted, PluginStoped,
     Update, ScrollTo, UpdateCmds, Style, ThemeChanged,
     ConfigChanged
 
 };
-use client::Client;
+use crate::client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
 

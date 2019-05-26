@@ -1,4 +1,4 @@
-use ViewId;
+use crate::ViewId;
 
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct ScrollTo {

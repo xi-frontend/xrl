@@ -1,4 +1,4 @@
-use {Line, Operation, OperationType, Update};
+use crate::{Line, Operation, OperationType, Update};
 
 /// Line cache struct to work with xi update protocol.
 #[derive(Clone, Debug, Default)]

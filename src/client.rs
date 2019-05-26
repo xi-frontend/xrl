@@ -1,10 +1,10 @@
 use futures::{future, Future};
 use serde_json::Value;
-use errors::ClientError;
-use protocol;
+use crate::errors::ClientError;
+use crate::protocol;
 use serde_json::{from_value, to_value, Map};
 use serde::Serialize;
-use structs::{ModifySelection, ViewId};
+use crate::structs::{ModifySelection, ViewId};
 
 /// A future returned by all the `Client`'s method.
 pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError> + Send>;

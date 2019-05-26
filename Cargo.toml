@@ -12,6 +12,7 @@ name = "xrl"
 readme = "README.md"
 repository = "https://github.com/xi-frontend/xrl"
 version = "0.0.5"
+edition = "2018"
 
 [dependencies]
 bytes = "0.4.8"

@@ -79,19 +79,13 @@
 #![cfg_attr(feature = "clippy", allow(missing_docs_in_private_items))]
 #![cfg_attr(feature = "clippy", allow(type_complexity))]
 
-extern crate bytes;
-extern crate futures;
 #[macro_use]
 extern crate log;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
-extern crate tokio;
-extern crate tokio_process;
-extern crate tokio_codec;
-extern crate syntect;
+
 
 mod protocol;
 mod client;
@@ -101,12 +95,12 @@ mod frontend;
 mod core;
 mod cache;
 
-pub use cache::LineCache;
-pub use frontend::{XiEvent, Frontend, FrontendBuilder, ServerResult};
-pub use client::{Client, ClientResult};
-pub use errors::{ClientError, ServerError};
-pub use core::{spawn, CoreStderr};
-pub use structs::{
+pub use crate::cache::LineCache;
+pub use crate::frontend::{XiEvent, Frontend, FrontendBuilder, ServerResult};
+pub use crate::client::{Client, ClientResult};
+pub use crate::errors::{ClientError, ServerError};
+pub use crate::core::{spawn, CoreStderr};
+pub use crate::structs::{
     AvailablePlugins, PluginStarted, PluginStoped, ThemeChanged,
     ThemeSettings,
     UpdateCmds, ConfigChanged, ConfigChanges, ScrollTo, Position,
