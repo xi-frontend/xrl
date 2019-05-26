@@ -63,11 +63,13 @@ fn deserialize_operation_from_value() {
                 cursor: vec![0],
                 styles: vec![],
                 text: "foo".to_owned(),
+                line_num: None,
             },
             Line {
                 cursor: vec![],
                 styles: vec![],
                 text: "".to_owned(),
+                line_num: None,
             },
         ],
     };
@@ -99,11 +101,13 @@ fn deserialize_operation() {
                 cursor: vec![0],
                 styles: vec![],
                 text: "foo".to_owned(),
+                line_num: None,
             },
             Line {
                 cursor: vec![],
                 styles: vec![],
                 text: "".to_owned(),
+                line_num: None,
             },
         ],
     };
