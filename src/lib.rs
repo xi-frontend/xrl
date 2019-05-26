@@ -22,44 +22,21 @@
 //!
 //! // Implement how our client handles notifications & requests from the core.
 //! impl Frontend for MyFrontend {
-//!     fn update(&mut self, update: Update) -> ServerResult<()> {
-//!         println!("received `update` from Xi core:\n{:?}", update);
-//!         // note that here, we could send requests/notifications
-//!         // to the core here with `self.client`
+//!
+//!     fn handle_event(&mut self, ev: XiEvent) -> ServerResult<()> {
+//!         match ev {
+//!             XiEvent::Update(update) => println!("received `update` from Xi core:\n{:?}", update),
+//!             XiEvent::ScrollTo(scroll) => println!("received `scroll_to` from Xi core:\n{:?}", scroll),
+//!             XiEvent::DefStyle(style) => println!("received `def_style` from Xi core:\n{:?}", style),
+//!             XiEvent::AvailablePlugins(plugins) => println!("received `available_plugins` from Xi core:\n{:?}", plugins),
+//!             XiEvent::UpdateCmds(cmds) => println!("received `update_cmds` from Xi core:\n{:?}", cmds),
+//!             XiEvent::PluginStarted(plugin) => println!("received `plugin_started` from Xi core:\n{:?}", plugin),
+//!             XiEvent::PluginStoped(plugin) => println!("received `plugin_stoped` from Xi core:\n{:?}", plugin),
+//!             XiEvent::ConfigChanged(config) => println!("received `config_changed` from Xi core:\n{:?}", config),
+//!             XiEvent::ThemeChanged(theme) => println!("received `theme_changed` from Xi core:\n{:?}", theme),
+//!         }
 //!         Box::new(future::ok(()))
 //!     }
-//!
-//!     fn scroll_to(&mut self, scroll_to: ScrollTo) -> ServerResult<()> {
-//!         println!("received `scroll_to` from Xi core:\n{:?}", scroll_to);
-//!         Box::new(future::ok(()))
-//!     }
-//!
-//!     fn def_style(&mut self, style: Style) -> ServerResult<()> {
-//!         println!("received `set_style` from Xi core:\n{:?}", style);
-//!         Box::new(future::ok(()))
-//!     }
-//!
-//!    fn available_plugins(&mut self, plugins: AvailablePlugins) -> ServerResult<()> {
-//!        Box::new(future::ok(()))
-//!    }
-//!
-//!    fn update_cmds(&mut self, plugins: UpdateCmds) -> ServerResult<()> {
-//!        Box::new(future::ok(()))
-//!    }
-//!
-//!    fn plugin_started(&mut self, plugins: PluginStarted) -> ServerResult<()> {
-//!        Box::new(future::ok(()))
-//!    }
-//!
-//!    fn plugin_stoped(&mut self, plugin: PluginStoped) -> ServerResult<()> {
-//!        Box::new(future::ok(()))
-//!    }
-//!    fn config_changed(&mut self, config: ConfigChanged) -> ServerResult<()> {
-//!        Box::new(future::ok(()))
-//!    }
-//!    fn theme_changed(&mut self, theme: ThemeChanged) -> ServerResult<()> {
-//!        Box::new(future::ok(()))
-//!    }
 //! }
 //!
 //! struct MyFrontendBuilder;
@@ -125,7 +102,7 @@ mod core;
 mod cache;
 
 pub use cache::LineCache;
-pub use frontend::{Frontend, FrontendBuilder, ServerResult};
+pub use frontend::{XiEvent, Frontend, FrontendBuilder, ServerResult};
 pub use client::{Client, ClientResult};
 pub use errors::{ClientError, ServerError};
 pub use core::{spawn, CoreStderr};
