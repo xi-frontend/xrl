@@ -27,6 +27,11 @@ impl LineCache {
         &self.lines
     }
 
+    /// Retrieve the total height of the linecache
+    pub fn height(&self) -> u64 {
+        self.before() + self.lines.len() as u64 + self.after()
+    }
+
     /// Handle an xi-core update.
     pub fn update(&mut self, update: Update) {
         let LineCache {
