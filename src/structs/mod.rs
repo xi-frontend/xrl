@@ -8,6 +8,10 @@ mod plugins;
 mod config;
 mod view;
 mod modifyselection;
+mod theme;
+mod alert;
+mod findreplace;
+mod language;
 
 pub use self::line::{Line, StyleDef};
 pub use self::operation::{Operation, OperationType};
@@ -22,13 +26,9 @@ pub use self::plugins::PluginStoped;
 pub use self::plugins::UpdateCmds;
 pub use self::config::ConfigChanged;
 pub use self::config::ConfigChanges;
-pub use self::view::ViewId;
+pub use self::view::{MeasureWidth, ViewId};
 pub use self::modifyselection::ModifySelection;
-
-pub type ThemeSettings = ::syntect::highlighting::ThemeSettings;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ThemeChanged {
-    pub name: String,
-    pub theme: ThemeSettings
-}
+pub use self::theme::{AvailableThemes, ThemeChanged, ThemeSettings};
+pub use self::findreplace::{FindStatus, Query, ReplaceStatus, Status};
+pub use self::language::{AvailableLanguages, LanguageChanged};
+pub use self::alert::Alert;

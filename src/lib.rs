@@ -34,6 +34,13 @@
 //!             XiEvent::PluginStoped(plugin) => println!("received `plugin_stoped` from Xi core:\n{:?}", plugin),
 //!             XiEvent::ConfigChanged(config) => println!("received `config_changed` from Xi core:\n{:?}", config),
 //!             XiEvent::ThemeChanged(theme) => println!("received `theme_changed` from Xi core:\n{:?}", theme),
+//!             XiEvent::Alert(alert) => println!("received `alert` from Xi core:\n{:?}", alert),
+//!             XiEvent::AvailableThemes(themes) => println!("received `available_themes` from Xi core:\n{:?}", themes),
+//!             XiEvent::FindStatus(status) => println!("received `find_status` from Xi core:\n{:?}", status),
+//!             XiEvent::ReplaceStatus(status) => println!("received `replace_status` from Xi core:\n{:?}", status),
+//!             XiEvent::MeasureWidth(request) => println!("received `measure_width` from Xi core:\n{:?}", request),
+//!             XiEvent::AvailableLanguages(langs) => println!("received `available_languages` from Xi core:\n{:?}", langs), 
+//!             XiEvent::LanguageChanged(lang) => println!("received `language_changed` from Xi core:\n{:?}", lang),
 //!         }
 //!         Box::new(future::ok(()))
 //!     }
@@ -102,8 +109,8 @@ pub use crate::errors::{ClientError, ServerError};
 pub use crate::core::{spawn, CoreStderr};
 pub use crate::structs::{
     AvailablePlugins, PluginStarted, PluginStoped, ThemeChanged,
-    ThemeSettings,
+    ThemeSettings, Query, Status, Alert, AvailableThemes, AvailableLanguages,
     UpdateCmds, ConfigChanged, ConfigChanges, ScrollTo, Position,
-    Update, Style, Operation, OperationType, Line, StyleDef,
-    ViewId, ModifySelection,
+    Update, Style, Operation, OperationType, Line, StyleDef, LanguageChanged,
+    ViewId, ModifySelection, FindStatus, ReplaceStatus, MeasureWidth
 };
