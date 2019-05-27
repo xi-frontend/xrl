@@ -53,7 +53,7 @@ impl FrontendBuilder<MyFrontend> for MyFrontendBuilder {
 
 fn main() {
     // spawn Xi core
-    let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
+    let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
 
     // All clients must send client_started notification first
     tokio::run(client.client_started(None, None).map_err(|_|()));
