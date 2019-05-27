@@ -2,8 +2,8 @@ use crate::ViewId;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Plugin {
-    name: String,
-    running: bool
+    pub name: String,
+    pub running: bool
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -27,7 +27,7 @@ pub struct PluginStoped {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct UpdateCmds {
-    cmds: Vec<String>,
-    plugin: String,
-    view_id: ViewId
+    pub cmds: Vec<String>,
+    pub plugin: String,
+    pub view_id: ViewId
 }
