@@ -506,13 +506,13 @@ impl Client {
         Box::new(self.notify("set_theme", params).and_then(|_| Ok(())))
     }
 
-    pub fn client_started(&self, config_dir: Option<&str>, client_extra_dir: Option<&str>) -> ClientResult<()> {
+    pub fn client_started(&self, config_dir: Option<&str>, client_extras_dir: Option<&str>) -> ClientResult<()> {
         let mut params = Map::new();
         if let Some(path) = config_dir {
             let _ = params.insert("config_dir".into(), json!(path));
         }
-        if let Some(path) = client_extra_dir {
-            let _ = params.insert("client_extra_dir".into(), json!(path));
+        if let Some(path) = client_extras_dir {
+            let _ = params.insert("client_extras_dir".into(), json!(path));
         }
         self.notify("client_started", params.into())
     }
