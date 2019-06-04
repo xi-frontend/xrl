@@ -1,7 +1,8 @@
+use crate::client::Client;
 use crate::errors::ServerError;
 use crate::protocol::Service;
 use futures::{future, Future};
-use serde_json::{from_value, Value};
+use serde_json::{from_value, to_value, Value};
 use crate::structs::{
     AvailablePlugins, PluginStarted, PluginStoped,
     Update, ScrollTo, UpdateCmds, Style, ThemeChanged,
@@ -9,13 +10,12 @@ use crate::structs::{
     ReplaceStatus, MeasureWidth, AvailableLanguages,
     LanguageChanged
 };
-use crate::client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
 
 /// Represents all possible RPC messages recieved from xi-core.
 #[derive(Debug)]
-pub enum XiEvent {
+pub enum XiNotification {
     Update(Update),
     ScrollTo(ScrollTo),
     DefStyle(Style),
@@ -29,7 +29,6 @@ pub enum XiEvent {
     AvailableThemes(AvailableThemes),
     FindStatus(FindStatus),
     ReplaceStatus(ReplaceStatus),
-    MeasureWidth(MeasureWidth),
     AvailableLanguages(AvailableLanguages),
     LanguageChanged(LanguageChanged),
 }
@@ -37,8 +36,8 @@ pub enum XiEvent {
 /// The `Frontend` trait must be implemented by clients. It defines how the
 /// client handles notifications and requests coming from `xi-core`.
 pub trait Frontend {
-
-    fn handle_event(&mut self, e: XiEvent) -> ServerResult<()>;
+    fn handle_notification(&mut self, notification: XiNotification) -> ServerResult<()>;
+    fn handle_measure_width(&mut self, request: MeasureWidth) -> ServerResult<Vec<Vec<f32>>>;
 }
 
 /// A builder for the type `F` that implement the `Frontend` trait.
@@ -59,10 +58,17 @@ impl<F: Frontend + Send> Service for F {
         method: &str,
         params: Value,
     ) -> Box<Future<Item = Result<Self::T, Self::E>, Error = Self::Error>> {
-        // AFAIK the core does not send any request to frontends yet
-        // We should return an ServerError here
         info!("<<< request: method={}, params={}", method, &params);
-        unimplemented!();
+        match method {
+            "measure_width" => match from_value::<MeasureWidth>(params) {
+                Ok(req) => Box::new(
+                    self.handle_measure_width(req)
+                        .and_then(|resp| Ok(Ok(to_value(resp).map_err(ServerError::from)?))),
+                ),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            },
+            _ => Box::new(future::err(ServerError::UnknownMethod(method.into()))),
+        }
     }
 
     fn handle_notification(
@@ -73,71 +79,73 @@ impl<F: Frontend + Send> Service for F {
         info!("<<< notification: method={}, params={}", method, &params);
         match method {
             "update" => match from_value::<Update>(params) {
-                Ok(update) => self.handle_event(XiEvent::Update(update)),
+                Ok(update) => self.handle_notification(XiNotification::Update(update)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
 
             "scroll_to" => match from_value::<ScrollTo>(params) {
-                Ok(scroll_to) => self.handle_event(XiEvent::ScrollTo(scroll_to)),
+                Ok(scroll_to) => self.handle_notification(XiNotification::ScrollTo(scroll_to)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
 
             "def_style" => match from_value::<Style>(params) {
-                Ok(style) => self.handle_event(XiEvent::DefStyle(style)),
+                Ok(style) => self.handle_notification(XiNotification::DefStyle(style)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "available_plugins" => match from_value::<AvailablePlugins>(params) {
-                Ok(plugins) => self.handle_event(XiEvent::AvailablePlugins(plugins)),
+                Ok(plugins) => self.handle_notification(XiNotification::AvailablePlugins(plugins)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "plugin_started" => match from_value::<PluginStarted>(params) {
-                Ok(plugin) => self.handle_event(XiEvent::PluginStarted(plugin)),
+                Ok(plugin) => self.handle_notification(XiNotification::PluginStarted(plugin)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "plugin_stoped" => match from_value::<PluginStoped>(params) {
-                Ok(plugin) => self.handle_event(XiEvent::PluginStoped(plugin)),
+                Ok(plugin) => self.handle_notification(XiNotification::PluginStoped(plugin)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "update_cmds" => match from_value::<UpdateCmds>(params) {
-                Ok(cmds) => self.handle_event(XiEvent::UpdateCmds(cmds)),
+                Ok(cmds) => self.handle_notification(XiNotification::UpdateCmds(cmds)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "config_changed" => match from_value::<ConfigChanged>(params) {
-                Ok(config) => self.handle_event(XiEvent::ConfigChanged(config)),
+                Ok(config) => self.handle_notification(XiNotification::ConfigChanged(config)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "theme_changed" => match from_value::<ThemeChanged>(params) {
-                Ok(theme) => self.handle_event(XiEvent::ThemeChanged(theme)),
+                Ok(theme) => self.handle_notification(XiNotification::ThemeChanged(theme)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "alert" => match from_value::<Alert>(params) {
-                Ok(alert) => self.handle_event(XiEvent::Alert(alert)),
+                Ok(alert) => self.handle_notification(XiNotification::Alert(alert)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            }
+            },
             "available_themes" => match from_value::<AvailableThemes>(params) {
-                Ok(themes) => self.handle_event(XiEvent::AvailableThemes(themes)),
+                Ok(themes) => self.handle_notification(XiNotification::AvailableThemes(themes)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            }
+            },
             "find_status" => match from_value::<FindStatus>(params) {
-                Ok(find_status) => self.handle_event(XiEvent::FindStatus(find_status)),
+                Ok(find_status) => {
+                    self.handle_notification(XiNotification::FindStatus(find_status))
+                }
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            }
+            },
             "replace_status" => match from_value::<ReplaceStatus>(params) {
-                Ok(replace_status) => self.handle_event(XiEvent::ReplaceStatus(replace_status)),
+                Ok(replace_status) => {
+                    self.handle_notification(XiNotification::ReplaceStatus(replace_status))
+                }
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            }
-            "measure_width" => match from_value::<MeasureWidth>(params) {
-                Ok(measure_width) => self.handle_event(XiEvent::MeasureWidth(measure_width)),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            }
+            },
             "available_languages" => match from_value::<AvailableLanguages>(params) {
-                Ok(available_langs) => self.handle_event(XiEvent::AvailableLanguages(available_langs)),
+                Ok(available_langs) => {
+                    self.handle_notification(XiNotification::AvailableLanguages(available_langs))
+                }
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            }
+            },
             "language_changed" => match from_value::<LanguageChanged>(params) {
-                Ok(lang) => self.handle_event(XiEvent::LanguageChanged(lang)),
+                Ok(lang) => self.handle_notification(XiNotification::LanguageChanged(lang)),
                 Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
-            }
+            },
             _ => Box::new(future::err(ServerError::UnknownMethod(method.into()))),
         }
     }

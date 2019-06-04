@@ -95,7 +95,7 @@ impl <'de>Visitor<'de> for ViewVisitor {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MeasureWidth(Vec<MeasureWidthInner>);
+pub struct MeasureWidth(pub Vec<MeasureWidthInner>);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MeasureWidthInner {
