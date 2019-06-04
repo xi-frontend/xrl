@@ -19,7 +19,7 @@ pub enum ClientError {
 }
 
 impl fmt::Display for ClientError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             ClientError::NotifyFailed => write!(f, "Failed to send a notification"),
             ClientError::RequestFailed => {
@@ -45,7 +45,7 @@ impl error::Error for ClientError {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         if let ClientError::SerializeFailed(ref serde_error) = *self {
             Some(serde_error)
         } else {
@@ -68,7 +68,7 @@ pub enum ServerError {
 }
 
 impl fmt::Display for ServerError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             ServerError::UnknownMethod(ref method) => write!(f, "Unkown method {}", method),
             ServerError::Other(ref s) => write!(f, "Unkown error: {}", s),
@@ -92,7 +92,7 @@ impl error::Error for ServerError {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         if let ServerError::DeserializeFailed(ref serde_error) = *self {
             Some(serde_error)
         } else {

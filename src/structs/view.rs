@@ -27,7 +27,7 @@ impl From<ParseIntError> for IdParseError {
 }
 
 impl fmt::Display for IdParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.to_string())
     }
 }
@@ -60,7 +60,7 @@ impl FromStr for ViewId {
 }
 
 impl fmt::Display for ViewId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "view-id-{}",self.0)
     }
 }
@@ -83,7 +83,7 @@ struct ViewVisitor;
 
 impl <'de>Visitor<'de> for ViewVisitor {
     type Value = ViewId;
-    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("expecting a string in the form of `view-id-x`.")
     }
     fn visit_str<E: Error>(self, s: &str) -> Result<Self::Value, E>  {

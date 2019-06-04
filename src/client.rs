@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::structs::{ModifySelection, ViewId};
 
 /// A future returned by all the `Client`'s method.
-pub type ClientResult<T> = Box<Future<Item = T, Error = ClientError> + Send>;
+pub type ClientResult<T> = Box<dyn Future<Item = T, Error = ClientError> + Send>;
 
 /// A client to send notifications and request to xi-core.
 #[derive(Clone)]

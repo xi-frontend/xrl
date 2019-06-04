@@ -23,19 +23,19 @@ pub trait Service: Send {
         &mut self,
         method: &str,
         params: Value,
-    ) -> Box<Future<Item = Result<Self::T, Self::E>, Error = Self::Error>>;
+    ) -> Box<dyn Future<Item = Result<Self::T, Self::E>, Error = Self::Error>>;
 
     fn handle_notification(
         &mut self,
         method: &str,
         params: Value,
-    ) -> Box<Future<Item = (), Error = Self::Error>>;
+    ) -> Box<dyn Future<Item = (), Error = Self::Error>>;
 }
 
 struct Server<S: Service + Send> {
     service: S,
-    request_tasks: HashMap<u64, Box<Future<Item = Result<S::T, S::E>, Error = S::Error>>>,
-    notification_tasks: Vec<Box<Future<Item = (), Error = S::Error>>>,
+    request_tasks: HashMap<u64, Box<dyn Future<Item = Result<S::T, S::E>, Error = S::Error>>>,
+    notification_tasks: Vec<Box<dyn Future<Item = (), Error = S::Error>>>,
 }
 
 unsafe impl <T: Service>Send for Server<T> {}

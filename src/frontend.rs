@@ -11,7 +11,7 @@ use crate::structs::{
     LanguageChanged
 };
 
-pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
+pub type ServerResult<T> = Box<dyn Future<Item = T, Error = ServerError>>;
 
 /// Represents all possible RPC messages recieved from xi-core.
 #[derive(Debug)]
@@ -57,7 +57,7 @@ impl<F: Frontend + Send> Service for F {
         &mut self,
         method: &str,
         params: Value,
-    ) -> Box<Future<Item = Result<Self::T, Self::E>, Error = Self::Error>> {
+    ) -> Box<dyn Future<Item = Result<Self::T, Self::E>, Error = Self::Error>> {
         info!("<<< request: method={}, params={}", method, &params);
         match method {
             "measure_width" => match from_value::<MeasureWidth>(params) {
@@ -75,7 +75,7 @@ impl<F: Frontend + Send> Service for F {
         &mut self,
         method: &str,
         params: Value,
-    ) -> Box<Future<Item = (), Error = Self::Error>> {
+    ) -> Box<dyn Future<Item = (), Error = Self::Error>> {
         info!("<<< notification: method={}, params={}", method, &params);
         match method {
             "update" => match from_value::<Update>(params) {

@@ -13,7 +13,7 @@ pub enum DecodeError {
 }
 
 impl Display for DecodeError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         Error::description(self).fmt(f)
     }
 }
@@ -30,7 +30,7 @@ impl Error for DecodeError {
         }
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         if let DecodeError::Io(ref io_err) = *self {
             Some(io_err)
         } else {
