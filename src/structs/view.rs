@@ -45,7 +45,7 @@ impl Error for IdParseError {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Ord, PartialOrd)]
 pub struct ViewId(pub usize);
 
 impl FromStr for ViewId {
@@ -92,6 +92,15 @@ impl <'de>Visitor<'de> for ViewVisitor {
             Ok(v) => Ok(v)
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MeasureWidth(Vec<MeasureWidthInner>);
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MeasureWidthInner {
+    pub id: u64,
+    pub strings: Vec<String>
 }
 
 #[cfg(test)]

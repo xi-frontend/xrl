@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 
-use Operation;
-use ViewId;
+use crate::Operation;
+use crate::ViewId;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Update {
@@ -67,11 +67,13 @@ fn deserialize_update() {
                         cursor: vec![0],
                         styles: vec![],
                         text: "Bar".to_owned(),
+                        line_num: None,
                     },
                     Line {
                         cursor: vec![],
                         styles: vec![],
                         text: "Foo".to_owned(),
+                        line_num: None,
                     },
                 ],
             },

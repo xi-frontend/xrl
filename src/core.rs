@@ -1,7 +1,7 @@
 use futures::{Future, Poll, Stream};
 use bytes::BytesMut;
-use protocol::Endpoint;
-use client::Client;
+use crate::protocol::Endpoint;
+use crate::client::Client;
 use std::io::{self, Read, Write};
 use std::process::Command;
 use std::process::Stdio;
@@ -9,7 +9,7 @@ use tokio;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_codec::{FramedRead, Decoder};
 use tokio_process::{Child, ChildStderr, ChildStdin, ChildStdout, CommandExt};
-use frontend::{Frontend, FrontendBuilder};
+use crate::frontend::{Frontend, FrontendBuilder};
 use std::clone::Clone;
 
 struct Core {

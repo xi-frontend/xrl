@@ -15,6 +15,8 @@ pub struct Line {
     pub cursor: Vec<u64>,
     #[serde(deserialize_with = "deserialize_styles")]
     pub styles: Vec<StyleDef>,
+    #[serde(rename = "ln")]
+    pub line_num: Option<u64>,
 }
 
 // FIXME: it's not super efficient to create an intermediate vector, this might
@@ -70,6 +72,7 @@ fn deserialize_line_with_styles() {
                 style_id: 8,
             },
         ],
+        line_num: None,
     };
     let deserialized: Result<Line, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), line);
@@ -85,6 +88,7 @@ fn deserialize_line_with_no_style() {
         text: "Bar".to_string(),
         cursor: vec![0],
         styles: vec![],
+        line_num: None,
     };
     let deserialized: Result<Line, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), line);

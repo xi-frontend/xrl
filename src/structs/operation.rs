@@ -27,7 +27,7 @@ fn deserialize_operation_type<'de, D>(de: D) -> ::std::result::Result<OperationT
 where
     D: serde::Deserializer<'de>,
 {
-    let value: json::Value = try!(serde::Deserialize::deserialize(de));
+    let value: json::Value = r#try!(serde::Deserialize::deserialize(de));
     match value {
         json::Value::String(ref s) if &*s == "copy" => Ok(OperationType::Copy_),
         json::Value::String(ref s) if &*s == "skip" => Ok(OperationType::Skip),
@@ -63,11 +63,13 @@ fn deserialize_operation_from_value() {
                 cursor: vec![0],
                 styles: vec![],
                 text: "foo".to_owned(),
+                line_num: None,
             },
             Line {
                 cursor: vec![],
                 styles: vec![],
                 text: "".to_owned(),
+                line_num: None,
             },
         ],
     };
@@ -99,11 +101,13 @@ fn deserialize_operation() {
                 cursor: vec![0],
                 styles: vec![],
                 text: "foo".to_owned(),
+                line_num: None,
             },
             Line {
                 cursor: vec![],
                 styles: vec![],
                 text: "".to_owned(),
+                line_num: None,
             },
         ],
     };

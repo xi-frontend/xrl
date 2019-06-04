@@ -34,6 +34,13 @@
 //!             XiEvent::PluginStoped(plugin) => println!("received `plugin_stoped` from Xi core:\n{:?}", plugin),
 //!             XiEvent::ConfigChanged(config) => println!("received `config_changed` from Xi core:\n{:?}", config),
 //!             XiEvent::ThemeChanged(theme) => println!("received `theme_changed` from Xi core:\n{:?}", theme),
+//!             XiEvent::Alert(alert) => println!("received `alert` from Xi core:\n{:?}", alert),
+//!             XiEvent::AvailableThemes(themes) => println!("received `available_themes` from Xi core:\n{:?}", themes),
+//!             XiEvent::FindStatus(status) => println!("received `find_status` from Xi core:\n{:?}", status),
+//!             XiEvent::ReplaceStatus(status) => println!("received `replace_status` from Xi core:\n{:?}", status),
+//!             XiEvent::MeasureWidth(request) => println!("received `measure_width` from Xi core:\n{:?}", request),
+//!             XiEvent::AvailableLanguages(langs) => println!("received `available_languages` from Xi core:\n{:?}", langs), 
+//!             XiEvent::LanguageChanged(lang) => println!("received `language_changed` from Xi core:\n{:?}", lang),
 //!         }
 //!         Box::new(future::ok(()))
 //!     }
@@ -73,25 +80,17 @@
 //!     tokio::run(open_new_view.map_err(|_| ()));
 //! }
 //! ```
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", deny(clippy))]
-#![cfg_attr(feature = "clippy", allow(missing_docs_in_private_items))]
-#![cfg_attr(feature = "clippy", allow(type_complexity))]
 
-extern crate bytes;
-extern crate futures;
+#![deny(clippy::all)]
+#![allow(clippy::type_complexity)]
+
 #[macro_use]
 extern crate log;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
-extern crate tokio;
-extern crate tokio_process;
-extern crate tokio_codec;
-extern crate syntect;
+
 
 mod protocol;
 mod client;
@@ -101,15 +100,15 @@ mod frontend;
 mod core;
 mod cache;
 
-pub use cache::LineCache;
-pub use frontend::{XiEvent, Frontend, FrontendBuilder, ServerResult};
-pub use client::{Client, ClientResult};
-pub use errors::{ClientError, ServerError};
-pub use core::{spawn, CoreStderr};
-pub use structs::{
+pub use crate::cache::LineCache;
+pub use crate::frontend::{XiEvent, Frontend, FrontendBuilder, ServerResult};
+pub use crate::client::{Client, ClientResult};
+pub use crate::errors::{ClientError, ServerError};
+pub use crate::core::{spawn, CoreStderr};
+pub use crate::structs::{
     AvailablePlugins, PluginStarted, PluginStoped, ThemeChanged,
-    ThemeSettings,
+    ThemeSettings, Query, Status, Alert, AvailableThemes, AvailableLanguages,
     UpdateCmds, ConfigChanged, ConfigChanges, ScrollTo, Position,
-    Update, Style, Operation, OperationType, Line, StyleDef,
-    ViewId, ModifySelection,
+    Update, Style, Operation, OperationType, Line, StyleDef, LanguageChanged,
+    ViewId, ModifySelection, FindStatus, ReplaceStatus, MeasureWidth
 };

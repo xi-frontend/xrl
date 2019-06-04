@@ -1,18 +1,20 @@
-use errors::ServerError;
-use protocol::Service;
+use crate::errors::ServerError;
+use crate::protocol::Service;
 use futures::{future, Future};
 use serde_json::{from_value, Value};
-use structs::{
+use crate::structs::{
     AvailablePlugins, PluginStarted, PluginStoped,
     Update, ScrollTo, UpdateCmds, Style, ThemeChanged,
-    ConfigChanged
-
+    ConfigChanged, Alert, AvailableThemes, FindStatus,
+    ReplaceStatus, MeasureWidth, AvailableLanguages,
+    LanguageChanged
 };
-use client::Client;
+use crate::client::Client;
 
 pub type ServerResult<T> = Box<Future<Item = T, Error = ServerError>>;
 
 /// Represents all possible RPC messages recieved from xi-core.
+#[derive(Debug)]
 pub enum XiEvent {
     Update(Update),
     ScrollTo(ScrollTo),
@@ -22,7 +24,14 @@ pub enum XiEvent {
     PluginStarted(PluginStarted),
     PluginStoped(PluginStoped),
     ConfigChanged(ConfigChanged),
-    ThemeChanged(ThemeChanged)
+    ThemeChanged(ThemeChanged),
+    Alert(Alert),
+    AvailableThemes(AvailableThemes),
+    FindStatus(FindStatus),
+    ReplaceStatus(ReplaceStatus),
+    MeasureWidth(MeasureWidth),
+    AvailableLanguages(AvailableLanguages),
+    LanguageChanged(LanguageChanged),
 }
 
 /// The `Frontend` trait must be implemented by clients. It defines how the
@@ -79,15 +88,15 @@ impl<F: Frontend + Send> Service for F {
             },
             "available_plugins" => match from_value::<AvailablePlugins>(params) {
                 Ok(plugins) => self.handle_event(XiEvent::AvailablePlugins(plugins)),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "plugin_started" => match from_value::<PluginStarted>(params) {
                 Ok(plugin) => self.handle_event(XiEvent::PluginStarted(plugin)),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "plugin_stoped" => match from_value::<PluginStoped>(params) {
                 Ok(plugin) => self.handle_event(XiEvent::PluginStoped(plugin)),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "update_cmds" => match from_value::<UpdateCmds>(params) {
                 Ok(cmds) => self.handle_event(XiEvent::UpdateCmds(cmds)),
@@ -95,13 +104,40 @@ impl<F: Frontend + Send> Service for F {
             },
             "config_changed" => match from_value::<ConfigChanged>(params) {
                 Ok(config) => self.handle_event(XiEvent::ConfigChanged(config)),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
             "theme_changed" => match from_value::<ThemeChanged>(params) {
                 Ok(theme) => self.handle_event(XiEvent::ThemeChanged(theme)),
-                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e)))
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
             },
-
+            "alert" => match from_value::<Alert>(params) {
+                Ok(alert) => self.handle_event(XiEvent::Alert(alert)),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            }
+            "available_themes" => match from_value::<AvailableThemes>(params) {
+                Ok(themes) => self.handle_event(XiEvent::AvailableThemes(themes)),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            }
+            "find_status" => match from_value::<FindStatus>(params) {
+                Ok(find_status) => self.handle_event(XiEvent::FindStatus(find_status)),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            }
+            "replace_status" => match from_value::<ReplaceStatus>(params) {
+                Ok(replace_status) => self.handle_event(XiEvent::ReplaceStatus(replace_status)),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            }
+            "measure_width" => match from_value::<MeasureWidth>(params) {
+                Ok(measure_width) => self.handle_event(XiEvent::MeasureWidth(measure_width)),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            }
+            "available_languages" => match from_value::<AvailableLanguages>(params) {
+                Ok(available_langs) => self.handle_event(XiEvent::AvailableLanguages(available_langs)),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            }
+            "language_changed" => match from_value::<LanguageChanged>(params) {
+                Ok(lang) => self.handle_event(XiEvent::LanguageChanged(lang)),
+                Err(e) => Box::new(future::err(ServerError::DeserializeFailed(e))),
+            }
             _ => Box::new(future::err(ServerError::UnknownMethod(method.into()))),
         }
     }

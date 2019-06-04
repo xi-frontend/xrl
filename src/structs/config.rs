@@ -1,4 +1,4 @@
-use ViewId;
+use crate::ViewId;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConfigChanged {
@@ -9,7 +9,7 @@ pub struct ConfigChanged {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConfigChanges {
     pub font_face: Option<String>,
-    pub font_size: Option<u64>,
+    pub font_size: Option<f32>,
     pub line_ending: Option<String>,
     pub plugin_search_path: Option<Vec<String>>,
     pub tab_size: Option<u64>,

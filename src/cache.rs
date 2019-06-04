@@ -1,4 +1,4 @@
-use {Line, Operation, OperationType, Update};
+use crate::{Line, Operation, OperationType, Update};
 
 /// Line cache struct to work with xi update protocol.
 #[derive(Clone, Debug, Default)]
@@ -25,6 +25,11 @@ impl LineCache {
     /// Retrieve all lines in the cache.
     pub fn lines(&self) -> &Vec<Line> {
         &self.lines
+    }
+
+    /// Retrieve the total height of the linecache
+    pub fn height(&self) -> u64 {
+        self.before() + self.lines.len() as u64 + self.after()
     }
 
     /// Handle an xi-core update.
