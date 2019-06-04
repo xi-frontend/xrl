@@ -80,11 +80,9 @@
 //!     tokio::run(open_new_view.map_err(|_| ()));
 //! }
 //! ```
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", deny(clippy))]
-#![cfg_attr(feature = "clippy", allow(missing_docs_in_private_items))]
-#![cfg_attr(feature = "clippy", allow(type_complexity))]
+
+#![deny(clippy::all)]
+#![allow(clippy::type_complexity)]
 
 #[macro_use]
 extern crate log;
