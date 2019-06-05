@@ -1,29 +1,74 @@
 use std::io::Read;
 use serde_json::{from_reader, to_vec, Value};
+use serde::{Serializer, Deserializer, Deserialize};
 
 use super::errors::*;
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Message {
     Request(Request),
     Response(Response),
     Notification(Notification),
 }
 
-#[derive(Serialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Deserialize)]
 pub struct Request {
     pub id: u64,
     pub method: String,
     pub params: Value,
 }
 
-#[derive(Serialize, PartialEq, Clone, Debug)]
+fn serialize_json_rpc_result<S>(
+    val: &Result<Value, Value>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match val {
+        Ok(v) => serializer.serialize_newtype_variant("", 0, "result", v),
+        Err(v) => serializer.serialize_newtype_variant("", 1, "error", v),
+    }
+}
+
+pub fn deserialize_json_rpc_result<'de, D>(
+    deserializer: D,
+) -> Result<Result<Value, Value>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match JsonRpcResult::<Value, Value>::deserialize(deserializer)? {
+
+        JsonRpcResult::Result(value) => {
+        println!("{:?}", value);
+            Ok(Ok(value))
+        }
+        JsonRpcResult::Error(value) =>
+        {
+                    println!("{:?}", value);
+            Ok(Err(value))
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Response {
     pub id: u64,
+    #[serde(flatten)]
+    #[serde(serialize_with = "serialize_json_rpc_result")]
+    #[serde(deserialize_with = "deserialize_json_rpc_result")]
     pub result: Result<Value, Value>,
 }
 
-#[derive(Serialize, PartialEq, Clone, Debug)]
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum JsonRpcResult<T, E> {
+    Result(T),
+    Error(E),
+}
+
+#[derive(Serialize, PartialEq, Clone, Debug, Deserialize)]
 pub struct Notification {
     pub method: String,
     pub params: Value,
@@ -34,13 +79,7 @@ impl Message {
     where
         R: Read,
     {
-        let value = from_reader(rd)?;
-        match get_message_type(&value) {
-            ValueType::Request => Ok(Message::Request(Request::decode(value)?)),
-            ValueType::Response => Ok(Message::Response(Response::decode(value)?)),
-            ValueType::Notification => Ok(Message::Notification(Notification::decode(value)?)),
-            ValueType::Invalid => Err(DecodeError::InvalidMessage),
-        }
+        Ok(from_reader(rd)?)
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -53,9 +92,7 @@ impl Message {
         // This should not be the case here, so I think it's safe to unwrap.
         match *self {
             Message::Request(ref request) => to_vec(request).expect("Request serialization failed"),
-            Message::Response(ref response) => {
-                to_vec(response).expect("Response serialization failed")
-            }
+            Message::Response(ref response) => to_vec(response).expect("Response serialization failed"),
             Message::Notification(ref notification) => {
                 to_vec(notification).expect("Notification serialization failed")
             }
@@ -63,100 +100,21 @@ impl Message {
     }
 }
 
-impl Notification {
-    fn decode(value: Value) -> Result<Self, DecodeError> {
-        let mut value = value;
-        let map = value.as_object_mut().ok_or(DecodeError::InvalidMessage)?;
+#[test]
+fn test_decode_message_ok() {
+    let s = r#"{"id": 1, "result": "foo"}"#;
+    let expected = Response { id: 1, result: Ok(Value::String(String::from("foo"))) };
+    let actual: Response = serde_json::from_str(s).unwrap();
+    assert_eq!(actual.id, 1);
+    assert_eq!(actual.result, Ok(Value::String(String::from("foo"))));
 
-        let method = map.remove("method")
-            .ok_or(DecodeError::InvalidMessage)?
-            .as_str()
-            .ok_or(DecodeError::InvalidMessage)?
-            .to_owned();
-
-        let params = map.remove("params").ok_or(DecodeError::InvalidMessage)?;
-
-        Ok(Notification {
-            method,
-            params,
-        })
-    }
 }
 
-impl Request {
-    fn decode(value: Value) -> Result<Self, DecodeError> {
-        let mut value = value;
-        let map = value.as_object_mut().ok_or(DecodeError::InvalidMessage)?;
-
-        let method = map.remove("method")
-            .ok_or(DecodeError::InvalidMessage)?
-            .as_str()
-            .ok_or(DecodeError::InvalidMessage)?
-            .to_owned();
-
-        let params = map.remove("params").ok_or(DecodeError::InvalidMessage)?;
-
-        let id = map.remove("id")
-            .ok_or(DecodeError::InvalidMessage)?
-            .as_u64()
-            .ok_or(DecodeError::InvalidMessage)?;
-
-        Ok(Request {
-            id,
-            method,
-            params,
-        })
-    }
-}
-
-impl Response {
-    fn decode(value: Value) -> Result<Self, DecodeError> {
-        let mut value = value;
-        let map = value.as_object_mut().ok_or(DecodeError::InvalidMessage)?;
-
-        let result = if map.contains_key("result") {
-            Ok(map.remove("result").ok_or(DecodeError::InvalidMessage)?)
-        } else if map.contains_key("error") {
-            Err(map.remove("error").ok_or(DecodeError::InvalidMessage)?)
-        } else {
-            return Err(DecodeError::InvalidMessage);
-        };
-
-        let id = map.remove("id")
-            .ok_or(DecodeError::InvalidMessage)?
-            .as_u64()
-            .ok_or(DecodeError::InvalidMessage)?;
-
-        Ok(Response {
-            id,
-            result,
-        })
-    }
-}
-
-enum ValueType {
-    Request,
-    Response,
-    Notification,
-    Invalid,
-}
-
-fn get_message_type(value: &Value) -> ValueType {
-    if let Value::Object(ref map) = *value {
-        if map.contains_key("method") && map.contains_key("params") {
-            if map.contains_key("id") {
-                ValueType::Request
-            } else {
-                ValueType::Notification
-            }
-        } else if (map.contains_key("result") || map.contains_key("error"))
-            && map.contains_key("id")
-        {
-            ValueType::Response
-        } else {
-            ValueType::Invalid
-        }
-    } else {
-        ValueType::Invalid
-    }
+#[test]
+fn test_decode_message_err() {
+    let s = r#"{"id": 1, "error": "foo"}"#;
+    let expected = Response { id: 1, result: Err(Value::String(String::from("foo"))) };
+    let actual: Response = serde_json::from_str(s).unwrap();
+    assert_eq!(actual.id, 1);
+    assert_eq!(actual.result, Err(Value::String(String::from("foo"))));
 }

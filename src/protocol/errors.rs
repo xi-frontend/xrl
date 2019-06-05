@@ -9,7 +9,6 @@ pub enum DecodeError {
     Truncated,
     Io(io::Error),
     InvalidJson,
-    InvalidMessage,
 }
 
 impl Display for DecodeError {
@@ -24,9 +23,6 @@ impl Error for DecodeError {
             DecodeError::Truncated => "not enough bytes to decode a complete message",
             DecodeError::Io(_) => "failure to read or write bytes on an IO stream",
             DecodeError::InvalidJson => "the byte sequence is not valid JSON",
-            DecodeError::InvalidMessage => {
-                "the byte sequence is valid JSON, but not a valid message"
-            }
         }
     }
 
@@ -49,6 +45,7 @@ impl From<SerdeError> for DecodeError {
     }
 }
 
+#[derive(Debug)]
 pub enum RpcError {
     ResponseCanceled,
     AckCanceled,
