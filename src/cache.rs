@@ -55,6 +55,7 @@ impl LineCache {
     }
 }
 
+#[derive(Debug)]
 struct UpdateHelper<'a, 'b, 'c> {
     old_lines: &'a mut Vec<Line>,
     old_invalid_before: &'b mut u64,
@@ -202,6 +203,9 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
     }
 
     fn update(mut self, operations: Vec<Operation>) {
+        trace!("updating the line cache");
+        trace!("cache state before: {:?}", &self);
+        trace!("operations to be applied: {:?}", &operations);
         for op in operations {
             match op.operation_type {
                 OperationType::Copy_ => (&mut self).apply_copy(op.nb_lines),
