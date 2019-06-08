@@ -19,6 +19,8 @@ pub struct Operation {
     pub operation_type: OperationType,
     #[serde(rename = "n")]
     pub nb_lines: u64,
+    #[serde(rename = "ln")]
+    pub line_num: Option<u64>,
     #[serde(default)]
     pub lines: Vec<Line>,
 }
@@ -48,6 +50,7 @@ fn deserialize_operation_from_value() {
     let operation = Operation {
         operation_type: OperationType::Insert,
         nb_lines: 12,
+        line_num: None,
         lines: vec![],
     };
     let deserialized: Result<Operation, _> = serde_json::from_value(value);
@@ -58,6 +61,7 @@ fn deserialize_operation_from_value() {
     let operation = Operation {
         operation_type: OperationType::Invalidate,
         nb_lines: 60,
+        line_num: None,
         lines: vec![
             Line {
                 cursor: vec![0],
@@ -85,6 +89,7 @@ fn deserialize_operation() {
     let operation = Operation {
         operation_type: OperationType::Insert,
         nb_lines: 12,
+        line_num: None,
         lines: vec![],
     };
     let deserialized: Result<Operation, _> = serde_json::from_str(s);
@@ -96,6 +101,7 @@ fn deserialize_operation() {
     let operation = Operation {
         operation_type: OperationType::Invalidate,
         nb_lines: 60,
+        line_num: None,
         lines: vec![
             Line {
                 cursor: vec![0],
@@ -111,6 +117,21 @@ fn deserialize_operation() {
             },
         ],
     };
+    let deserialized: Result<Operation, _> = serde_json::from_str(s);
+    assert_eq!(deserialized.unwrap(), operation);
+}
+
+#[test]
+fn deserialize_copy() {
+    use serde_json;
+    let s = r#"{"ln":3,"n":1,"op":"copy"}"#;
+    let operation = Operation {
+        operation_type: OperationType::Copy_,
+        line_num: Some(3),
+        nb_lines: 1,
+        lines: Vec::new(),
+    };
+
     let deserialized: Result<Operation, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), operation);
 }

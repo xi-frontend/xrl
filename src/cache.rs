@@ -68,7 +68,7 @@ struct UpdateHelper<'a, 'b, 'c> {
 }
 
 impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
-    fn apply_copy(&mut self, nb_lines: u64) {
+    fn apply_copy(&mut self, nb_lines: u64, first_line_num: Option<u64>) {
         debug!("copying {} lines", nb_lines);
         let UpdateHelper {
             ref mut old_lines,
@@ -79,41 +79,101 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             ref mut new_invalid_after,
             ..
         } = *self;
+
+        // The number of lines left to copy
         let mut nb_lines = nb_lines;
 
-        // Copy invalid lines that precede the valid ones
-        if **old_invalid_before > nb_lines {
+        // STEP 1: Handle the invalid lines that precede the valid ones
+        // ------------------------------------------------------------
+
+        if **old_invalid_before >= nb_lines {
+            // case 1: there are more (or equal) invalid lines than lines to copy
+
+            // decrement old_invalid_lines by nb_lines
             **old_invalid_before -= nb_lines;
+
+            // and increment new_invalid_lines by the same amount
             *new_invalid_before += nb_lines;
+
+            // there is no more line to copy so we're done
             return;
+
         } else if **old_invalid_after > 0 {
+            // case 2: there are more lines to copy than invalid lines
+
+            // decrement the nb of lines to copy by the number of invalid lines
             nb_lines -= **old_invalid_before;
+
+            // increment new_invalid_lines by the same amount
             *new_invalid_before += **old_invalid_before;
+
+            // we don't have any invalid lines left
             **old_invalid_before = 0;
         }
 
-        // Copy the valid lines
+        // STEP 2: Handle the valid lines
+        // ------------------------------------------------------------
+
         let nb_valid_lines = old_lines.len();
-        if nb_lines < nb_valid_lines as u64 {
-            new_lines.extend(old_lines.drain(0..nb_lines as usize));
-            return;
+        let range;
+
+        if nb_lines <= (nb_valid_lines as u64) {
+            // case 1: the are more (or equal) valid lines than lines to copy
+
+            // the range of lines to copy: from the start to nb_lines - 1;
+            range = 0..nb_lines as usize;
+
+            // after the copy, we won't have any line remaining to copy
+            nb_lines = 0;
         } else {
-            new_lines.extend(old_lines.drain(..));
+            // case 2: there are more lines to copy than valid lines
+
+            // we copy all the valid lines
+            range = 0..nb_valid_lines;
+
+            // after the operation we'll have (nb_lines - nb_valid_lines) left to copy
             nb_lines -= nb_valid_lines as u64;
         }
 
-        // Copy the remaining invalid lines
-        if **old_invalid_after >= nb_lines {
-            **old_invalid_after -= nb_lines;
-            *new_invalid_after += nb_lines;
+        // we'll only apply the copy if there actually are valid lines to copy
+        if nb_valid_lines > 0 {
+            let old_first_line_num = old_lines[0].line_num.unwrap(); // valid lines always have a line number, so it's fine to unwrap.
+
+            // the line_num_updater is the function that will update the line numbers if necessary
+            let diff = if let Some(new_first_line_num) = first_line_num {
+                new_first_line_num as i64 - old_first_line_num as i64
+            } else {
+                0
+            };
+
+            let copied_lines = old_lines.drain(range).map(|mut line| {
+                line.line_num = line.line_num.map(|line_num| (line_num as i64 + diff) as u64);
+                line
+            });
+            new_lines.extend(copied_lines);
+        }
+
+        // if there are no more lines to copy we're done
+        if nb_lines == 0 {
             return;
         }
 
-        error!(
-            "{} lines left to copy, but only {} lines in the old cache",
-            nb_lines, **old_invalid_after
-        );
-        panic!("cache update failed");
+        // STEP 3: Handle the remaining invalid lines
+        // ------------------------------------------------------------
+
+
+        // We should have at least enought invalid lines to copy, otherwise it indicates there's a
+        // problem, and we panic.
+        if **old_invalid_after >= nb_lines {
+            **old_invalid_after -= nb_lines;
+            *new_invalid_after += nb_lines;
+        } else {
+            error!(
+                "{} lines left to copy, but only {} lines in the old cache",
+                nb_lines, **old_invalid_after
+            );
+            panic!("cache update failed");
+        }
     }
 
     fn apply_skip(&mut self, nb_lines: u64) {
@@ -212,7 +272,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             debug!("operation: {:?}", &op);
             debug!("cache helper before operation {:?}", &self);
             match op.operation_type {
-                OperationType::Copy_ => (&mut self).apply_copy(op.nb_lines),
+                OperationType::Copy_ => (&mut self).apply_copy(op.nb_lines, op.line_num),
                 OperationType::Skip => (&mut self).apply_skip(op.nb_lines),
                 OperationType::Invalidate => (&mut self).apply_invalidate(op.nb_lines),
                 OperationType::Insert => (&mut self).apply_insert(op.lines),
