@@ -137,12 +137,18 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
 
         // we'll only apply the copy if there actually are valid lines to copy
         if nb_valid_lines > 0 {
-            let old_first_line_num = old_lines[0].line_num.unwrap(); // valid lines always have a line number, so it's fine to unwrap.
-
-            // the line_num_updater is the function that will update the line numbers if necessary
             let diff = if let Some(new_first_line_num) = first_line_num {
-                new_first_line_num as i64 - old_first_line_num as i64
+                // find the first "real" line (ie non-wrapped), and
+                // compute the difference between its line number and
+                // its *new* line number, given by the "copy"
+                // operation. This will be used to update the line
+                // number for all the lines we copy.
+                old_lines.iter().find_map(|line| {
+                    line.line_num.map(|num| new_first_line_num as i64 - num as i64)
+                }).unwrap_or(0)
             } else {
+                // if the "copy" operation does not specify a new line
+                // number, just set the diff to 0
                 0
             };
 
