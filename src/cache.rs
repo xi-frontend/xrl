@@ -34,6 +34,8 @@ impl LineCache {
 
     /// Handle an xi-core update.
     pub fn update(&mut self, update: Update) {
+        debug!("line cache before update: {:?}", self);
+        debug!("operations to be applied to the line cache: {:?}", &update.operations);
         let LineCache {
             ref mut lines,
             ref mut invalid_before,
@@ -67,7 +69,7 @@ struct UpdateHelper<'a, 'b, 'c> {
 
 impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
     fn apply_copy(&mut self, nb_lines: u64) {
-        info!("copying {} lines", nb_lines);
+        debug!("copying {} lines", nb_lines);
         let UpdateHelper {
             ref mut old_lines,
             ref mut old_invalid_before,
@@ -115,7 +117,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
     }
 
     fn apply_skip(&mut self, nb_lines: u64) {
-        info!("skipping {} lines", nb_lines);
+        debug!("skipping {} lines", nb_lines);
 
         let UpdateHelper {
             ref mut old_lines,
@@ -159,7 +161,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
     }
 
     fn apply_invalidate(&mut self, nb_lines: u64) {
-        info!("invalidating {} lines", nb_lines);
+        debug!("invalidating {} lines", nb_lines);
         if self.new_lines.is_empty() {
             self.new_invalid_before += nb_lines;
         } else {
@@ -168,7 +170,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
     }
 
     fn apply_insert(&mut self, mut lines: Vec<Line>) {
-        info!("inserting {} lines", lines.len());
+        debug!("inserting {} lines", lines.len());
         self.new_lines.extend(lines.drain(..).map(|mut line| {
             trim_new_line(&mut line.text);
             line
@@ -176,7 +178,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
     }
 
     fn apply_update(&mut self, nb_lines: u64, lines: Vec<Line>) {
-        info!("updating {} lines", nb_lines);
+        debug!("updating {} lines", nb_lines);
         let UpdateHelper {
             ref mut old_lines,
             ref mut new_lines,
@@ -207,6 +209,8 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         trace!("cache state before: {:?}", &self);
         trace!("operations to be applied: {:?}", &operations);
         for op in operations {
+            debug!("operation: {:?}", &op);
+            debug!("cache helper before operation {:?}", &self);
             match op.operation_type {
                 OperationType::Copy_ => (&mut self).apply_copy(op.nb_lines),
                 OperationType::Skip => (&mut self).apply_skip(op.nb_lines),
@@ -214,6 +218,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
                 OperationType::Insert => (&mut self).apply_insert(op.lines),
                 OperationType::Update => (&mut self).apply_update(op.nb_lines, op.lines),
             }
+            debug!("cache helper after operation {:?}", &self);
         }
         *self.old_lines = self.new_lines;
         *self.old_invalid_before = self.new_invalid_before;
