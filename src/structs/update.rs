@@ -46,7 +46,7 @@ impl<'de> Deserialize<'de> for Update {
 fn deserialize_update() {
     use serde_json;
     use std::str::FromStr;
-    
+
     use super::Line;
     use super::operation::{Operation, OperationType};
 
@@ -57,11 +57,13 @@ fn deserialize_update() {
             Operation {
                 operation_type: OperationType::Invalidate,
                 nb_lines: 60,
+                line_num: None,
                 lines: vec![],
             },
             Operation {
                 operation_type: OperationType::Insert,
                 nb_lines: 12,
+                line_num: None,
                 lines: vec![
                     Line {
                         cursor: vec![0],
