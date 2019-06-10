@@ -1,10 +1,9 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::error::Error;
 use std::io;
 
 use futures::sync::{mpsc, oneshot};
-use futures::{Async, AsyncSink, Future, Poll, Sink, StartSend, Stream};
+use futures::{Async, AsyncSink, Future, IntoFuture, Poll, Sink, StartSend, Stream};
 use serde_json::Value;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_codec::{Decoder, Framed};
@@ -14,97 +13,123 @@ use super::errors::RpcError;
 use super::message::Response as ResponseMessage;
 use super::message::{Message, Notification, Request};
 
+// We need this IntoStaticFuture trait because the future we spawn on
+// Tokio's event loop must have the 'static lifetime.and be Send.
+
+/// Class of types which can be converted into a future. This trait is
+/// only differs from
+/// [`futures::future::IntoFuture`](https://docs.rs/futures/0.1.17/futures/future/trait.IntoFuture.html)
+/// in that the returned future has the `'static` lifetime.
+pub trait IntoStaticFuture {
+    /// The future that this type can be converted into.
+    type Future: Future<Item = Self::Item, Error = Self::Error> + 'static + Send;
+    /// The item that the future may resolve with.
+    type Item;
+    /// The error that the future may resolve with.
+    type Error;
+
+    /// Consumes this object and produces a future.
+    fn into_static_future(self) -> Self::Future;
+}
+
+impl<F: IntoFuture> IntoStaticFuture for F
+where
+    <F as IntoFuture>::Future: 'static + Send,
+{
+    type Future = <F as IntoFuture>::Future;
+    type Item = <F as IntoFuture>::Item;
+    type Error = <F as IntoFuture>::Error;
+
+    fn into_static_future(self) -> Self::Future {
+        self.into_future()
+    }
+}
+
 pub trait Service: Send {
-    type Error: Error;
-    type T: Into<Value>;
-    type E: Into<Value>;
+    type T: Into<Value> + Send + 'static;
+    type E: Into<Value> + Send + 'static;
+    type RequestFuture: IntoStaticFuture<Item = Self::T, Error = Self::E>;
+    type NotificationFuture: IntoStaticFuture<Item = (), Error = ()>;
 
-    fn handle_request(
-        &mut self,
-        method: &str,
-        params: Value,
-    ) -> Box<dyn Future<Item = Result<Self::T, Self::E>, Error = Self::Error>>;
+    fn handle_request(&mut self, method: &str, params: Value) -> Self::RequestFuture;
 
-    fn handle_notification(
-        &mut self,
-        method: &str,
-        params: Value,
-    ) -> Box<dyn Future<Item = (), Error = Self::Error>>;
+    fn handle_notification(&mut self, method: &str, params: Value) -> Self::NotificationFuture;
 }
 
 struct Server<S: Service + Send> {
     service: S,
-    request_tasks: HashMap<u64, Box<dyn Future<Item = Result<S::T, S::E>, Error = S::Error>>>,
-    notification_tasks: Vec<Box<dyn Future<Item = (), Error = S::Error>>>,
+    // This will receive responses from the service (or possibly from whatever worker tasks that
+    // the service spawned). The u64 contains the id of the request that the response is for.
+    pending_responses: mpsc::UnboundedReceiver<(u64, Result<S::T, S::E>)>,
+    // We hand out a clone of this whenever we call `service.handle_request`.
+    response_sender: mpsc::UnboundedSender<(u64, Result<S::T, S::E>)>,
 }
 
 unsafe impl<T: Service> Send for Server<T> {}
 
 impl<S: Service> Server<S> {
     fn new(service: S) -> Self {
+        let (tx, rx) = mpsc::unbounded();
         Server {
             service,
-            request_tasks: HashMap::new(),
-            notification_tasks: Vec::new(),
+            pending_responses: rx,
+            response_sender: tx,
         }
     }
 
-    fn poll_notification_tasks(&mut self) {
-        trace!("polling pending notification tasks");
-        let mut done = vec![];
-        for (idx, task) in self.notification_tasks.iter_mut().enumerate() {
-            match task.poll() {
-                Ok(Async::Ready(_)) => done.push(idx),
-                Ok(Async::NotReady) => continue,
-                Err(e) => {
-                    done.push(idx);
-                    error!("failed to handle notification: {}", e);
+    fn send_responses<T: AsyncRead + AsyncWrite>(
+        &mut self,
+        sink: &mut Transport<T>,
+    ) -> Poll<(), io::Error> {
+        trace!("Server: flushing responses");
+        while let Ok(poll) = self.pending_responses.poll() {
+            if let Async::Ready(Some((id, result))) = poll {
+                let msg = Message::Response(ResponseMessage {
+                    id,
+                    result: result.map(Into::into).map_err(Into::into),
+                });
+                // FIXME: in futures 0.2, use poll_ready before reading from pending_responses, and
+                // don't panic here.
+                sink.start_send(msg).unwrap();
+            } else {
+                if let Async::Ready(None) = poll {
+                    panic!("we store the sender, it can't be dropped");
                 }
+
+                // We're done pushing all messages into the sink, now try to flush it.
+                return sink.poll_complete();
             }
         }
-        for idx in done.iter().rev() {
-            self.notification_tasks.remove(*idx);
-        }
-    }
-
-    fn poll_request_tasks<T: AsyncRead + AsyncWrite>(&mut self, stream: &mut Transport<T>) {
-        trace!("polling pending requests");
-        let mut done = vec![];
-        for (id, task) in &mut self.request_tasks {
-            match task.poll() {
-                Ok(Async::Ready(response)) => {
-                    let msg = Message::Response(ResponseMessage {
-                        id: *id,
-                        result: response.map(|v| v.into()).map_err(|e| e.into()),
-                    });
-                    done.push(*id);
-                    stream.send(msg);
-                }
-                Ok(Async::NotReady) => continue,
-                Err(e) => {
-                    done.push(*id);
-                    error!("Failed to handle request: {}", e);
-                }
-            }
-        }
-
-        for idx in done.iter_mut().rev() {
-            let _ = self.request_tasks.remove(idx);
-        }
+        panic!("an UnboundedReceiver should never give an error");
     }
 
     fn process_request(&mut self, request: Request) {
-        let method = request.method.as_str();
-        let params = request.params;
-        let response = self.service.handle_request(method, params);
-        self.request_tasks.insert(request.id, response);
+        let Request { method, params, id } = request;
+        let response_sender = self.response_sender.clone();
+        let future = self
+            .service
+            .handle_request(method.as_str(), params)
+            .into_static_future()
+            .then(move |response| {
+                // Send the service's response back to the Server, so
+                // that it can be sent over the transport layer.
+                //
+                // TODO: handle error from unbounded_send?
+                response_sender
+                    .unbounded_send((id, response))
+                    .map_err(|_| ())
+            });
+        // tokio::spawn returns a tokio::executor::Spawn that we don't
+        // need so it's fine to ignore it.
+        let _ = tokio::spawn(future);
     }
 
     fn process_notification(&mut self, notification: Notification) {
-        let method = notification.method.as_str();
-        let params = notification.params;
-        let task = self.service.handle_notification(method, params);
-        self.notification_tasks.push(task);
+        let Notification { method, params } = notification;
+        let future = self.service.handle_notification(method.as_str(), params);
+        // tokio::spawn returns a tokio::executor::Spawn that we don't
+        // need so it's fine to ignore it.
+        let _ = tokio::spawn(future.into_static_future());
     }
 }
 
@@ -114,7 +139,7 @@ pub struct Response(oneshot::Receiver<Result<Value, Value>>);
 
 type AckTx = oneshot::Sender<()>;
 
-/// A future that resolves when a notification has been effictively sent to the
+/// A future that resolves when a notification has been effectively sent to the
 /// server. It does not guarantees that the server receives it, just that it
 /// has been sent.
 pub struct Ack(oneshot::Receiver<()>);
@@ -411,10 +436,19 @@ where
             }
         }
 
+        // Try to flush out all the responses that are queued up. If
+        // this doesn't succeed, our output sink is full. In that
+        // case, we apply some backpressure to our input stream by not
+        // reading from it.
         if let Some(ref mut server) = self.server {
             let server = server.get_mut();
-            server.poll_request_tasks(self.stream.get_mut());
-            server.poll_notification_tasks();
+            let sink = self.stream.get_mut();
+            // Note that errors from poll_complete() are usually
+            // fatal, hence the early return. See:
+            // https://docs.rs/tokio/0.1.21/tokio/prelude/trait.Sink.html#errors-1
+            if let Async::NotReady = server.send_responses(sink)? {
+                return Ok(Async::NotReady);
+            }
         }
 
         let mut client_shutdown: bool = false;
