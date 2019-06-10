@@ -107,7 +107,7 @@ pub use crate::cache::LineCache;
 pub use crate::client::Client;
 pub use crate::core::{spawn, CoreStderr};
 pub use crate::errors::{ClientError, ServerError};
-pub use crate::frontend::{Frontend, FrontendBuilder, ServerResult, XiNotification};
+pub use crate::frontend::{Frontend, FrontendBuilder, XiNotification};
 pub use crate::structs::{
     Alert, AvailableLanguages, AvailablePlugins, AvailableThemes, ConfigChanged, ConfigChanges,
     FindStatus, LanguageChanged, Line, MeasureWidth, ModifySelection, Operation, OperationType,
