@@ -1,8 +1,8 @@
-use std::io;
+use serde_json::error::Category;
+use serde_json::error::Error as SerdeError;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
-use serde_json::error::Error as SerdeError;
-use serde_json::error::Category;
+use std::io;
 
 #[derive(Debug)]
 pub enum DecodeError {

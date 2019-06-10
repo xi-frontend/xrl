@@ -30,25 +30,22 @@ impl<'de> Deserialize<'de> for Update {
     where
         D: Deserializer<'de>,
     {
-        Deserialize::deserialize(deserializer).map(|UpdateHelper { update, view_id }| {
-            Update {
-                rev: update.rev,
-                operations: update.operations,
-                pristine: update.pristine,
-                view_id,
-            }
+        Deserialize::deserialize(deserializer).map(|UpdateHelper { update, view_id }| Update {
+            rev: update.rev,
+            operations: update.operations,
+            pristine: update.pristine,
+            view_id,
         })
     }
 }
-
 
 #[test]
 fn deserialize_update() {
     use serde_json;
     use std::str::FromStr;
 
-    use super::Line;
     use super::operation::{Operation, OperationType};
+    use super::Line;
 
     let s =
         r#"{"update":{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true},"view_id":"view-id-1"}"#;

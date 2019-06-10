@@ -3,16 +3,16 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::io;
 
-use futures::{Async, AsyncSink, Future, Poll, Sink, StartSend, Stream};
 use futures::sync::{mpsc, oneshot};
-use tokio_codec::{Framed, Decoder};
-use tokio::io::{AsyncRead, AsyncWrite};
+use futures::{Async, AsyncSink, Future, Poll, Sink, StartSend, Stream};
 use serde_json::Value;
+use tokio::io::{AsyncRead, AsyncWrite};
+use tokio_codec::{Decoder, Framed};
 
-use super::message::{Message, Notification, Request};
-use super::message::Response as ResponseMessage;
 use super::codec::Codec;
 use super::errors::RpcError;
+use super::message::Response as ResponseMessage;
+use super::message::{Message, Notification, Request};
 
 pub trait Service: Send {
     type Error: Error;
@@ -38,7 +38,7 @@ struct Server<S: Service + Send> {
     notification_tasks: Vec<Box<dyn Future<Item = (), Error = S::Error>>>,
 }
 
-unsafe impl <T: Service>Send for Server<T> {}
+unsafe impl<T: Service> Send for Server<T> {}
 
 impl<S: Service> Server<S> {
     fn new(service: S) -> Self {
@@ -341,39 +341,47 @@ where
     fn handle_message(&mut self, msg: Message) {
         debug!("handling message from remote peer {:?}", msg);
         match msg {
-            Message::Request(request) => if let Some(ref mut server) = self.server {
-                server.get_mut().process_request(request);
-            } else {
-                warn!(
-                    "this endpoint does not handle requests => request ignored: {:?}",
-                    request
-                );
-            },
-            Message::Notification(notification) => if let Some(ref mut server) = self.server {
-                server.get_mut().process_notification(notification);
-            } else {
-                warn!(
-                    "this endpoint does not handle notifications => notification ignored: {:?}",
-                    notification
-                );
-            },
-            Message::Response(response) => if let Some(ref mut client) = self.client {
-                client.get_mut().process_response(response);
-            } else {
-                warn!(
-                    "this endpoint does not handle responses => response ignored: {:?}",
-                    response
-                );
-            },
+            Message::Request(request) => {
+                if let Some(ref mut server) = self.server {
+                    server.get_mut().process_request(request);
+                } else {
+                    warn!(
+                        "this endpoint does not handle requests => request ignored: {:?}",
+                        request
+                    );
+                }
+            }
+            Message::Notification(notification) => {
+                if let Some(ref mut server) = self.server {
+                    server.get_mut().process_notification(notification);
+                } else {
+                    warn!(
+                        "this endpoint does not handle notifications => notification ignored: {:?}",
+                        notification
+                    );
+                }
+            }
+            Message::Response(response) => {
+                if let Some(ref mut client) = self.client {
+                    client.get_mut().process_response(response);
+                } else {
+                    warn!(
+                        "this endpoint does not handle responses => response ignored: {:?}",
+                        response
+                    );
+                }
+            }
         }
     }
 
     fn flush(&mut self) {
         trace!("flushing stream");
         match self.stream.get_mut().poll_complete() {
-            Ok(Async::Ready(())) => if let Some(ref mut client) = self.client {
-                client.get_mut().acknowledge_notifications();
-            },
+            Ok(Async::Ready(())) => {
+                if let Some(ref mut client) = self.client {
+                    client.get_mut().acknowledge_notifications();
+                }
+            }
             Ok(Async::NotReady) => return,
             Err(e) => panic!("Failed to flush the sink: {:?}", e),
         }

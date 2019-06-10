@@ -4,12 +4,7 @@ extern crate tokio;
 extern crate xrl;
 
 use futures::{future, Future, Stream};
-use xrl::{
-    XiNotification,
-    Client, ServerResult, Frontend,
-    FrontendBuilder, spawn, MeasureWidth
-};
-
+use xrl::{spawn, Client, Frontend, FrontendBuilder, MeasureWidth, ServerResult, XiNotification};
 
 // Type that represent our client
 struct MyFrontend {
@@ -19,7 +14,6 @@ struct MyFrontend {
 
 // Implement how our client handles notifications and requests from the core.
 impl Frontend for MyFrontend {
-
     fn handle_notification(&mut self, notification: XiNotification) -> ServerResult<()> {
         use XiNotification::*;
 
@@ -27,18 +21,34 @@ impl Frontend for MyFrontend {
             Update(update) => println!("received `update` from Xi core:\n{:?}", update),
             ScrollTo(scroll) => println!("received `scroll_to` from Xi core:\n{:?}", scroll),
             DefStyle(style) => println!("received `def_style` from Xi core:\n{:?}", style),
-            AvailablePlugins(plugins) => println!("received `available_plugins` from Xi core:\n{:?}", plugins),
+            AvailablePlugins(plugins) => {
+                println!("received `available_plugins` from Xi core:\n{:?}", plugins)
+            }
             UpdateCmds(cmds) => println!("received `update_cmds` from Xi core:\n{:?}", cmds),
-            PluginStarted(plugin) => println!("received `plugin_started` from Xi core:\n{:?}", plugin),
-            PluginStoped(plugin) => println!("received `plugin_stoped` from Xi core:\n{:?}", plugin),
-            ConfigChanged(config) => println!("received `config_changed` from Xi core:\n{:?}", config),
+            PluginStarted(plugin) => {
+                println!("received `plugin_started` from Xi core:\n{:?}", plugin)
+            }
+            PluginStoped(plugin) => {
+                println!("received `plugin_stoped` from Xi core:\n{:?}", plugin)
+            }
+            ConfigChanged(config) => {
+                println!("received `config_changed` from Xi core:\n{:?}", config)
+            }
             ThemeChanged(theme) => println!("received `theme_changed` from Xi core:\n{:?}", theme),
             Alert(alert) => println!("received `alert` from Xi core:\n{:?}", alert),
-            AvailableThemes(themes) => println!("received `available_themes` from Xi core:\n{:?}", themes),
+            AvailableThemes(themes) => {
+                println!("received `available_themes` from Xi core:\n{:?}", themes)
+            }
             FindStatus(status) => println!("received `find_status` from Xi core:\n{:?}", status),
-            ReplaceStatus(status) => println!("received `replace_status` from Xi core:\n{:?}", status),
-            AvailableLanguages(langs) => println!("received `available_languages` from Xi core:\n{:?}", langs),
-            LanguageChanged(lang) => println!("received `language_changed` from Xi core:\n{:?}", lang),
+            ReplaceStatus(status) => {
+                println!("received `replace_status` from Xi core:\n{:?}", status)
+            }
+            AvailableLanguages(langs) => {
+                println!("received `available_languages` from Xi core:\n{:?}", langs)
+            }
+            LanguageChanged(lang) => {
+                println!("received `language_changed` from Xi core:\n{:?}", lang)
+            }
         }
         Box::new(future::ok(()))
     }
@@ -61,13 +71,14 @@ fn main() {
     let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
 
     // All clients must send client_started notification first
-    tokio::run(client.client_started(None, None).map_err(|_|()));
+    tokio::run(client.client_started(None, None).map_err(|_| ()));
     // start logging Xi core's stderr
     let log_core_errors = core_stderr
         .for_each(|msg| {
             println!("xi-core stderr: {}", msg);
             Ok(())
-        }).map_err(|_|());
+        })
+        .map_err(|_| ());
     ::std::thread::spawn(move || {
         tokio::run(log_core_errors);
     });
@@ -75,7 +86,7 @@ fn main() {
     let open_new_view = client
         .new_view(None)
         .map(|view_name| println!("opened new view: {}", view_name))
-        .map_err(|_|());
+        .map_err(|_| ());
     tokio::run(open_new_view);
     // sleep until xi-requests are received
     ::std::thread::sleep(::std::time::Duration::new(5, 0));

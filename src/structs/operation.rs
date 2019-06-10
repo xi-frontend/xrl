@@ -56,8 +56,7 @@ fn deserialize_operation_from_value() {
     let deserialized: Result<Operation, _> = serde_json::from_value(value);
     assert_eq!(deserialized.unwrap(), operation);
 
-    let value =
-        json!({"lines":[{"cursor":[0],"styles":[],"text":"foo"},{"styles":[],"text":""}],"n":60,"op":"invalidate"});
+    let value = json!({"lines":[{"cursor":[0],"styles":[],"text":"foo"},{"styles":[],"text":""}],"n":60,"op":"invalidate"});
     let operation = Operation {
         operation_type: OperationType::Invalidate,
         nb_lines: 60,
@@ -94,7 +93,6 @@ fn deserialize_operation() {
     };
     let deserialized: Result<Operation, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), operation);
-
 
     let s =
         r#"{"lines":[{"cursor":[0],"styles":[],"text":"foo"},{"styles":[],"text":""}],"n":60,"op":"invalidate"}"#;

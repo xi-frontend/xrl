@@ -1,6 +1,6 @@
-use std::io::Read;
+use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::{from_reader, to_vec, Value};
-use serde::{Serializer, Deserializer, Deserialize};
+use std::io::Read;
 
 use super::errors::*;
 
@@ -39,14 +39,12 @@ where
     D: Deserializer<'de>,
 {
     match JsonRpcResult::<Value, Value>::deserialize(deserializer)? {
-
         JsonRpcResult::Result(value) => {
-        println!("{:?}", value);
+            println!("{:?}", value);
             Ok(Ok(value))
         }
-        JsonRpcResult::Error(value) =>
-        {
-                    println!("{:?}", value);
+        JsonRpcResult::Error(value) => {
+            println!("{:?}", value);
             Ok(Err(value))
         }
     }
@@ -92,7 +90,9 @@ impl Message {
         // This should not be the case here, so I think it's safe to unwrap.
         match *self {
             Message::Request(ref request) => to_vec(request).expect("Request serialization failed"),
-            Message::Response(ref response) => to_vec(response).expect("Response serialization failed"),
+            Message::Response(ref response) => {
+                to_vec(response).expect("Response serialization failed")
+            }
             Message::Notification(ref notification) => {
                 to_vec(notification).expect("Notification serialization failed")
             }
@@ -103,17 +103,22 @@ impl Message {
 #[test]
 fn test_decode_message_ok() {
     let s = r#"{"id": 1, "result": "foo"}"#;
-    let expected = Response { id: 1, result: Ok(Value::String(String::from("foo"))) };
+    let expected = Response {
+        id: 1,
+        result: Ok(Value::String(String::from("foo"))),
+    };
     let actual: Response = serde_json::from_str(s).unwrap();
     assert_eq!(actual.id, 1);
     assert_eq!(actual.result, Ok(Value::String(String::from("foo"))));
-
 }
 
 #[test]
 fn test_decode_message_err() {
     let s = r#"{"id": 1, "error": "foo"}"#;
-    let expected = Response { id: 1, result: Err(Value::String(String::from("foo"))) };
+    let expected = Response {
+        id: 1,
+        result: Err(Value::String(String::from("foo"))),
+    };
     let actual: Response = serde_json::from_str(s).unwrap();
     assert_eq!(actual.id, 1);
     assert_eq!(actual.result, Err(Value::String(String::from("foo"))));

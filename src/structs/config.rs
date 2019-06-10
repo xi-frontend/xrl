@@ -3,7 +3,7 @@ use crate::ViewId;
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConfigChanged {
     pub view_id: ViewId,
-    pub changes: ConfigChanges
+    pub changes: ConfigChanges,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]

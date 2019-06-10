@@ -39,7 +39,7 @@
 //!             AvailableThemes(themes) => println!("received `available_themes` from Xi core:\n{:?}", themes),
 //!             FindStatus(status) => println!("received `find_status` from Xi core:\n{:?}", status),
 //!             ReplaceStatus(status) => println!("received `replace_status` from Xi core:\n{:?}", status),
-//!             AvailableLanguages(langs) => println!("received `available_languages` from Xi core:\n{:?}", langs), 
+//!             AvailableLanguages(langs) => println!("received `available_languages` from Xi core:\n{:?}", langs),
 //!             LanguageChanged(lang) => println!("received `language_changed` from Xi core:\n{:?}", lang),
 //!         }
 //!         Box::new(future::ok(()))
@@ -95,24 +95,22 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
-
-mod protocol;
-mod client;
-mod errors;
-mod structs;
-mod frontend;
-mod core;
 mod cache;
+mod client;
+mod core;
+mod errors;
+mod frontend;
+mod protocol;
+mod structs;
 
 pub use crate::cache::LineCache;
-pub use crate::frontend::{XiNotification, Frontend, FrontendBuilder, ServerResult};
 pub use crate::client::{Client, ClientResult};
-pub use crate::errors::{ClientError, ServerError};
 pub use crate::core::{spawn, CoreStderr};
+pub use crate::errors::{ClientError, ServerError};
+pub use crate::frontend::{Frontend, FrontendBuilder, ServerResult, XiNotification};
 pub use crate::structs::{
-    AvailablePlugins, PluginStarted, PluginStoped, ThemeChanged,
-    ThemeSettings, Query, Status, Alert, AvailableThemes, AvailableLanguages,
-    UpdateCmds, ConfigChanged, ConfigChanges, ScrollTo, Position,
-    Update, Style, Operation, OperationType, Line, StyleDef, LanguageChanged,
-    ViewId, ModifySelection, FindStatus, ReplaceStatus, MeasureWidth,
+    Alert, AvailableLanguages, AvailablePlugins, AvailableThemes, ConfigChanged, ConfigChanges,
+    FindStatus, LanguageChanged, Line, MeasureWidth, ModifySelection, Operation, OperationType,
+    PluginStarted, PluginStoped, Position, Query, ReplaceStatus, ScrollTo, Status, Style, StyleDef,
+    ThemeChanged, ThemeSettings, Update, UpdateCmds, ViewId,
 };
