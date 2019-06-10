@@ -104,7 +104,7 @@ mod protocol;
 mod structs;
 
 pub use crate::cache::LineCache;
-pub use crate::client::{Client, ClientResult};
+pub use crate::client::Client;
 pub use crate::core::{spawn, CoreStderr};
 pub use crate::errors::{ClientError, ServerError};
 pub use crate::frontend::{Frontend, FrontendBuilder, ServerResult, XiNotification};
