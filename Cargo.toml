@@ -29,3 +29,10 @@ syntect = { version = "3.2.0", default-features = false }
 [dependencies.clippy]
 optional = true
 version = "0.0.302"
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "linecache"
+harness = false
