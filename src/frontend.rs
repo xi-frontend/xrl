@@ -1,5 +1,5 @@
 use crate::client::Client;
-use crate::protocol::{endpoint::IntoStaticFuture, Service};
+use crate::protocol::{endpoint::IntoStaticFuture, Client as InnerClient, Service, ServiceBuilder};
 use crate::structs::{
     Alert, AvailableLanguages, AvailablePlugins, AvailableThemes, ConfigChanged, FindStatus,
     LanguageChanged, MeasureWidth, PluginStarted, PluginStoped, ReplaceStatus, ScrollTo, Style,
@@ -41,12 +41,25 @@ pub trait Frontend {
     fn handle_measure_width(&mut self, request: MeasureWidth) -> Self::MeasureWidthResult;
 }
 
-/// A builder for the type `F` that implement the `Frontend` trait.
-pub trait FrontendBuilder<F>
+/// A trait to build a type that implements `Frontend`.
+pub trait FrontendBuilder {
+    /// The type to build
+    type Frontend: Frontend;
+
+    /// Build the frontend with the given client.
+    fn build(self, client: Client) -> Self::Frontend;
+}
+
+impl<B> ServiceBuilder for B
 where
-    F: Frontend,
+    B: FrontendBuilder,
+    B::Frontend: Send,
 {
-    fn build(self, client: Client) -> F;
+    type Service = B::Frontend;
+
+    fn build(self, client: InnerClient) -> B::Frontend {
+        <Self as FrontendBuilder>::build(self, Client(client))
+    }
 }
 
 impl<F: Frontend + Send> Service for F {

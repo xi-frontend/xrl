@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io;
 
@@ -289,12 +288,6 @@ impl InnerClient {
     }
 }
 
-pub struct Endpoint<S: Service, T: AsyncRead + AsyncWrite> {
-    stream: RefCell<Transport<T>>,
-    client: Option<RefCell<InnerClient>>,
-    server: Option<RefCell<Server<S>>>,
-}
-
 struct Transport<T: AsyncRead + AsyncWrite>(Framed<T, Codec>);
 
 impl<T> Transport<T>
@@ -340,73 +333,41 @@ where
     }
 }
 
+pub struct Endpoint<S: Service, T: AsyncRead + AsyncWrite> {
+    stream: Transport<T>,
+    client: InnerClient,
+    server: Server<S>,
+}
+
 impl<S, T> Endpoint<S, T>
 where
     S: Service,
     T: AsyncRead + AsyncWrite,
 {
-    pub fn new(stream: T) -> Self {
-        Endpoint {
-            stream: RefCell::new(Transport(Codec.framed(stream))),
-            client: None,
-            server: None,
-        }
-    }
-
-    pub fn set_server(&mut self, service: S) {
-        self.server = Some(RefCell::new(Server::new(service)));
-    }
-
-    pub fn set_client(&mut self) -> Client {
+    pub fn new<B: ServiceBuilder<Service = S>>(stream: T, builder: B) -> (Self, Client) {
         let (client, client_proxy) = InnerClient::new();
-        self.client = Some(RefCell::new(client));
-        client_proxy
+        let endpoint = Endpoint {
+            stream: Transport(Codec.framed(stream)),
+            client: client,
+            server: Server::new(builder.build(client_proxy.clone())),
+        };
+        (endpoint, client_proxy)
     }
 
     fn handle_message(&mut self, msg: Message) {
         debug!("handling message from remote peer {:?}", msg);
+        use Message::*;
         match msg {
-            Message::Request(request) => {
-                if let Some(ref mut server) = self.server {
-                    server.get_mut().process_request(request);
-                } else {
-                    warn!(
-                        "this endpoint does not handle requests => request ignored: {:?}",
-                        request
-                    );
-                }
-            }
-            Message::Notification(notification) => {
-                if let Some(ref mut server) = self.server {
-                    server.get_mut().process_notification(notification);
-                } else {
-                    warn!(
-                        "this endpoint does not handle notifications => notification ignored: {:?}",
-                        notification
-                    );
-                }
-            }
-            Message::Response(response) => {
-                if let Some(ref mut client) = self.client {
-                    client.get_mut().process_response(response);
-                } else {
-                    warn!(
-                        "this endpoint does not handle responses => response ignored: {:?}",
-                        response
-                    );
-                }
-            }
+            Request(request) => self.server.process_request(request),
+            Notification(notification) => self.server.process_notification(notification),
+            Response(response) => self.client.process_response(response),
         }
     }
 
     fn flush(&mut self) {
         trace!("flushing stream");
-        match self.stream.get_mut().poll_complete() {
-            Ok(Async::Ready(())) => {
-                if let Some(ref mut client) = self.client {
-                    client.get_mut().acknowledge_notifications();
-                }
-            }
+        match self.stream.poll_complete() {
+            Ok(Async::Ready(())) => self.client.acknowledge_notifications(),
             Ok(Async::NotReady) => return,
             Err(e) => panic!("Failed to flush the sink: {:?}", e),
         }
@@ -423,7 +384,7 @@ where
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         trace!("polling stream");
         loop {
-            match self.stream.get_mut().poll()? {
+            match self.stream.poll()? {
                 Async::Ready(Some(msg)) => self.handle_message(msg),
                 Async::Ready(None) => {
                     warn!("stream closed by remote peer.");
@@ -440,40 +401,34 @@ where
         // this doesn't succeed, our output sink is full. In that
         // case, we apply some backpressure to our input stream by not
         // reading from it.
-        if let Some(ref mut server) = self.server {
-            let server = server.get_mut();
-            let sink = self.stream.get_mut();
-            // Note that errors from poll_complete() are usually
-            // fatal, hence the early return. See:
-            // https://docs.rs/tokio/0.1.21/tokio/prelude/trait.Sink.html#errors-1
-            if let Async::NotReady = server.send_responses(sink)? {
-                return Ok(Async::NotReady);
-            }
+        //
+        // Note that errors from poll_complete() are usually fatal,
+        // hence the early return. See:
+        // https://docs.rs/tokio/0.1.21/tokio/prelude/trait.Sink.html#errors-1
+        if let Async::NotReady = self.server.send_responses(&mut self.stream)? {
+            return Ok(Async::NotReady);
         }
 
-        let mut client_shutdown: bool = false;
-        if let Some(ref mut client) = self.client {
-            let client = client.get_mut();
-            let stream = self.stream.get_mut();
-            client.process_requests(stream);
-            client.process_notifications(stream);
-            if client.is_shutting_down() {
-                warn!("Client shut down, exiting");
-                client_shutdown = true;
-            }
-        }
-        if client_shutdown {
-            self.client = None;
+        let mut client_shutdown = false;
+        self.client.process_requests(&mut self.stream);
+        self.client.process_notifications(&mut self.stream);
+        if self.client.is_shutting_down() {
+            warn!("Client shut down, exiting");
+            client_shutdown = true;
         }
 
         self.flush();
-        Ok(Async::NotReady)
+        if client_shutdown {
+            Ok(Async::Ready(()))
+        } else {
+            Ok(Async::NotReady)
+        }
     }
 }
 
 /// A `Service` builder. This trait must be implemented for servers.
 pub trait ServiceBuilder {
-    type Service: Service + 'static;
+    type Service: Service;
 
     fn build(self, client: Client) -> Self::Service;
 }

@@ -3,7 +3,6 @@ use crate::frontend::{Frontend, FrontendBuilder};
 use crate::protocol::Endpoint;
 use bytes::BytesMut;
 use futures::{Future, Poll, Stream};
-use std::clone::Clone;
 use std::io::{self, Read, Write};
 use std::process::Command;
 use std::process::Stdio;
@@ -51,8 +50,8 @@ impl AsyncWrite for Core {
 /// Start Xi core, and return a client and a stream of Xi's stderr lines.
 pub fn spawn<B, F>(executable: &str, builder: B) -> (Client, CoreStderr)
 where
-    B: FrontendBuilder<F> + 'static,
     F: Frontend + 'static + Send,
+    B: FrontendBuilder<Frontend = F> + 'static,
 {
     let mut xi_core = Command::new(executable)
         .stdout(Stdio::piped())
@@ -71,14 +70,11 @@ where
         stdin,
     };
 
-    let mut endpoint = Endpoint::new(core);
-    let client = Client(endpoint.set_client());
-    let service = builder.build(client.clone());
-    endpoint.set_server(service);
+    let (endpoint, client) = Endpoint::new(core, builder);
     ::std::thread::spawn(move || {
         tokio::run(endpoint.map_err(|_| ()));
     });
-    (client, CoreStderr::new(stderr))
+    (Client(client), CoreStderr::new(stderr))
 }
 
 pub struct LineCodec;
