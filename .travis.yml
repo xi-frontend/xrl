@@ -13,4 +13,6 @@ before_script:
 script:
   # Required for tests. Install only if not present already
   - bash -c 'which xi-core || cargo install --git https://github.com/xi-editor/xi-editor xi-core'
-  - bash -c 'if [[ "$TRAVIS_RUST_VERSION" == "nightly" ]] ; then cargo clippy && cargo fmt -- --check && cargo test ; else cargo test ; fi'
+  - cargo clippy
+  - cargo fmt -- --check
+  - cargo test

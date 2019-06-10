@@ -1,5 +1,5 @@
-use std::io;
 use bytes::{BufMut, BytesMut};
+use std::io;
 use tokio_codec::{Decoder, Encoder};
 
 use super::errors::DecodeError;

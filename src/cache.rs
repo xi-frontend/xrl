@@ -9,7 +9,6 @@ pub struct LineCache {
 }
 
 impl LineCache {
-
     /// Retrieve the number of invalid lines before
     /// the start of the line cache.
     pub fn before(&self) -> u64 {
@@ -35,7 +34,10 @@ impl LineCache {
     /// Handle an xi-core update.
     pub fn update(&mut self, update: Update) {
         debug!("line cache before update: {:?}", self);
-        debug!("operations to be applied to the line cache: {:?}", &update.operations);
+        debug!(
+            "operations to be applied to the line cache: {:?}",
+            &update.operations
+        );
         let LineCache {
             ref mut lines,
             ref mut invalid_before,
@@ -97,7 +99,6 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
 
             // there is no more line to copy so we're done
             return;
-
         } else if **old_invalid_after > 0 {
             // case 2: there are more lines to copy than invalid lines
 
@@ -143,9 +144,13 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
                 // its *new* line number, given by the "copy"
                 // operation. This will be used to update the line
                 // number for all the lines we copy.
-                old_lines.iter().find_map(|line| {
-                    line.line_num.map(|num| new_first_line_num as i64 - num as i64)
-                }).unwrap_or(0)
+                old_lines
+                    .iter()
+                    .find_map(|line| {
+                        line.line_num
+                            .map(|num| new_first_line_num as i64 - num as i64)
+                    })
+                    .unwrap_or(0)
             } else {
                 // if the "copy" operation does not specify a new line
                 // number, just set the diff to 0
@@ -153,7 +158,9 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             };
 
             let copied_lines = old_lines.drain(range).map(|mut line| {
-                line.line_num = line.line_num.map(|line_num| (line_num as i64 + diff) as u64);
+                line.line_num = line
+                    .line_num
+                    .map(|line_num| (line_num as i64 + diff) as u64);
                 line
             });
             new_lines.extend(copied_lines);
@@ -166,7 +173,6 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
 
         // STEP 3: Handle the remaining invalid lines
         // ------------------------------------------------------------
-
 
         // We should have at least enought invalid lines to copy, otherwise it indicates there's a
         // problem, and we panic.

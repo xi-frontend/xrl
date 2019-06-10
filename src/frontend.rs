@@ -1,15 +1,13 @@
 use crate::client::Client;
 use crate::errors::ServerError;
 use crate::protocol::Service;
+use crate::structs::{
+    Alert, AvailableLanguages, AvailablePlugins, AvailableThemes, ConfigChanged, FindStatus,
+    LanguageChanged, MeasureWidth, PluginStarted, PluginStoped, ReplaceStatus, ScrollTo, Style,
+    ThemeChanged, Update, UpdateCmds,
+};
 use futures::{future, Future};
 use serde_json::{from_value, to_value, Value};
-use crate::structs::{
-    AvailablePlugins, PluginStarted, PluginStoped,
-    Update, ScrollTo, UpdateCmds, Style, ThemeChanged,
-    ConfigChanged, Alert, AvailableThemes, FindStatus,
-    ReplaceStatus, MeasureWidth, AvailableLanguages,
-    LanguageChanged
-};
 
 pub type ServerResult<T> = Box<dyn Future<Item = T, Error = ServerError>>;
 

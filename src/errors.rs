@@ -1,7 +1,7 @@
-use std::fmt;
-use std::error;
-use serde_json::Value;
 use serde_json::error::Error as SerdeError;
+use serde_json::Value;
+use std::error;
+use std::fmt;
 
 #[derive(Debug)]
 pub enum ClientError {

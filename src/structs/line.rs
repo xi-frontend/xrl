@@ -27,9 +27,10 @@ where
 {
     let v = Vec::<i64>::deserialize(deserializer)?;
     if v.len() % 3 != 0 {
-        return Err(serde::de::Error::custom(
-            format!("styles length is not a multiple of 3: {}", v.len()),
-        ));
+        return Err(serde::de::Error::custom(format!(
+            "styles length is not a multiple of 3: {}",
+            v.len()
+        )));
     }
 
     let nb_styles = v.len() / 3;
@@ -45,11 +46,10 @@ where
     Ok(styles)
 }
 
-
 #[test]
 fn deserialize_line_with_styles() {
-    use serde_json;
     use super::Line;
+    use serde_json;
 
     let s = r#"{"cursor":[0],"styles":[0,1,2,3,4,5,6,7,8],"text":"Bar"}"#;
     let line = Line {
@@ -80,8 +80,8 @@ fn deserialize_line_with_styles() {
 
 #[test]
 fn deserialize_line_with_no_style() {
-    use serde_json;
     use super::Line;
+    use serde_json;
 
     let s = r#"{"cursor":[0],"styles":[],"text":"Bar"}"#;
     let line = Line {

@@ -1,16 +1,16 @@
-use futures::{Future, Poll, Stream};
-use bytes::BytesMut;
-use crate::protocol::Endpoint;
 use crate::client::Client;
+use crate::frontend::{Frontend, FrontendBuilder};
+use crate::protocol::Endpoint;
+use bytes::BytesMut;
+use futures::{Future, Poll, Stream};
+use std::clone::Clone;
 use std::io::{self, Read, Write};
 use std::process::Command;
 use std::process::Stdio;
 use tokio;
 use tokio::io::{AsyncRead, AsyncWrite};
-use tokio_codec::{FramedRead, Decoder};
+use tokio_codec::{Decoder, FramedRead};
 use tokio_process::{Child, ChildStderr, ChildStdin, ChildStdout, CommandExt};
-use crate::frontend::{Frontend, FrontendBuilder};
-use std::clone::Clone;
 
 struct Core {
     #[allow(dead_code)]

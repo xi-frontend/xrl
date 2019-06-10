@@ -1,10 +1,10 @@
-use futures::{future, Future};
-use serde_json::Value;
 use crate::errors::ClientError;
 use crate::protocol;
-use serde_json::{from_value, to_value, Map};
-use serde::Serialize;
 use crate::structs::{ModifySelection, ViewId};
+use futures::{future, Future};
+use serde::Serialize;
+use serde_json::Value;
+use serde_json::{from_value, to_value, Map};
 
 /// A future returned by all the `Client`'s method.
 pub type ClientResult<T> = Box<dyn Future<Item = T, Error = ClientError> + Send>;
@@ -14,7 +14,7 @@ pub type ClientResult<T> = Box<dyn Future<Item = T, Error = ClientError> + Send>
 pub struct Client(pub protocol::Client);
 
 fn get_edit_params<T: Serialize>(
-view_id: ViewId,
+    view_id: ViewId,
     method: &str,
     params: Option<T>,
 ) -> Result<Value, ClientError> {
@@ -30,7 +30,6 @@ view_id: ViewId,
         "params": params_value,
     }))
 }
-
 
 impl Client {
     /// Send a notification to the core. Most (if not all) notifications
@@ -50,23 +49,26 @@ impl Client {
     /// should not be necessary in most cases.
     pub fn request(&self, method: &str, params: Value) -> ClientResult<Value> {
         info!(">>> request : method={}, params={}", method, &params);
-        Box::new(self.0.request(method, params).then(
-            |response| match response {
-                Ok(Ok(value)) => Ok(value),
-                Ok(Err(value)) => Err(ClientError::ErrorReturned(value)),
-                Err(_) => Err(ClientError::RequestFailed),
-            },
-        ))
+        Box::new(
+            self.0
+                .request(method, params)
+                .then(|response| match response {
+                    Ok(Ok(value)) => Ok(value),
+                    Ok(Err(value)) => Err(ClientError::ErrorReturned(value)),
+                    Err(_) => Err(ClientError::RequestFailed),
+                }),
+        )
     }
 
     pub fn edit_request<T: Serialize>(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         method: &str,
-        params: Option<T>)-> ClientResult<Value> {
-            match get_edit_params(view_id, method, params) {
-                Ok(value) => self.request("edit", value),
-                Err(e) => Box::new(future::err(e)),
+        params: Option<T>,
+    ) -> ClientResult<Value> {
+        match get_edit_params(view_id, method, params) {
+            Ok(value) => self.request("edit", value),
+            Err(e) => Box::new(future::err(e)),
         }
     }
 
@@ -74,8 +76,8 @@ impl Client {
     /// already implemented, so this method should not be necessary in most
     /// cases.
     pub fn edit_notify<T: Serialize>(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         method: &str,
         params: Option<T>,
     ) -> ClientResult<()> {
@@ -95,7 +97,7 @@ impl Client {
     }
 
     pub fn goto_line(&self, view_id: ViewId, line: u64) -> ClientResult<()> {
-        self.edit_notify(view_id, "goto_line", Some(json!({"line": line})))
+        self.edit_notify(view_id, "goto_line", Some(json!({ "line": line })))
     }
 
     pub fn copy(&self, view_id: ViewId) -> ClientResult<Value> {
@@ -103,7 +105,7 @@ impl Client {
     }
 
     pub fn paste(&self, view_id: ViewId, buffer: &str) -> ClientResult<()> {
-        self.edit_notify(view_id, "paste", Some(json!({"chars": buffer})))
+        self.edit_notify(view_id, "paste", Some(json!({ "chars": buffer })))
     }
 
     pub fn cut(&self, view_id: ViewId) -> ClientResult<Value> {
@@ -119,8 +121,8 @@ impl Client {
     }
 
     pub fn find(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         search_term: &str,
         case_sensitive: bool,
         regex: bool,
@@ -133,13 +135,13 @@ impl Client {
                 "chars": search_term,
                 "case_sensitive": case_sensitive,
                 "regex": regex,
-                "whole_words": whole_words}))
+                "whole_words": whole_words})),
         )
     }
 
     fn find_other(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         command: &str,
         wrap_around: bool,
         allow_same: bool,
@@ -151,13 +153,13 @@ impl Client {
             Some(json!({
                 "wrap_around": wrap_around,
                 "allow_same": allow_same,
-                "modify_selection": modify_selection}))
+                "modify_selection": modify_selection})),
         )
     }
 
     pub fn find_next(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         wrap_around: bool,
         allow_same: bool,
         modify_selection: ModifySelection,
@@ -167,12 +169,13 @@ impl Client {
             "find_next",
             wrap_around,
             allow_same,
-            modify_selection)
+            modify_selection,
+        )
     }
 
     pub fn find_prev(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         wrap_around: bool,
         allow_same: bool,
         modify_selection: ModifySelection,
@@ -182,7 +185,8 @@ impl Client {
             "find_previous",
             wrap_around,
             allow_same,
-            modify_selection)
+            modify_selection,
+        )
     }
 
     pub fn find_all(&self, view_id: ViewId) -> ClientResult<()> {
@@ -190,7 +194,11 @@ impl Client {
     }
 
     pub fn highlight_find(&self, view_id: ViewId, visible: bool) -> ClientResult<()> {
-        self.edit_notify(view_id, "highlight_find", Some(json!({"visible": visible})))
+        self.edit_notify(
+            view_id,
+            "highlight_find",
+            Some(json!({ "visible": visible })),
+        )
     }
 
     pub fn left(&self, view_id: ViewId) -> ClientResult<()> {
@@ -252,7 +260,7 @@ impl Client {
     pub fn del(&self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "delete_backward", None as Option<Value>)
     }
-    
+
     pub fn delete_word_backward(&self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "delete_word_backward", None as Option<Value>)
     }
@@ -322,11 +330,7 @@ impl Client {
     }
 
     pub fn document_end(&self, view_id: ViewId) -> ClientResult<()> {
-        self.edit_notify(
-            view_id,
-            "move_to_end_of_document",
-            None as Option<Value>,
-        )
+        self.edit_notify(view_id, "move_to_end_of_document", None as Option<Value>)
     }
 
     pub fn document_end_sel(&self, view_id: ViewId) -> ClientResult<()> {
@@ -348,7 +352,7 @@ impl Client {
     pub fn insert(&self, view_id: ViewId, string: &str) -> ClientResult<()> {
         self.edit_notify(view_id, "insert", Some(json!({ "chars": string })))
     }
-    
+
     pub fn insert_newline(&self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "insert_newline", None as Option<Value>)
     }
@@ -374,12 +378,7 @@ impl Client {
         self.edit_notify(view_id, "click", Some(json!([line, column, 0, 1])))
     }
 
-    pub fn click_point_select(
-    &self,
-    view_id: ViewId,
-        line: u64,
-        column: u64,
-    ) -> ClientResult<()> {
+    pub fn click_point_select(&self, view_id: ViewId, line: u64, column: u64) -> ClientResult<()> {
         let ty = "point_select";
         self.edit_notify(
             view_id,
@@ -388,12 +387,7 @@ impl Client {
         )
     }
 
-    pub fn click_toggle_sel(
-    &self,
-    view_id: ViewId,
-        line: u64,
-        column: u64,
-    ) -> ClientResult<()> {
+    pub fn click_toggle_sel(&self, view_id: ViewId, line: u64, column: u64) -> ClientResult<()> {
         let ty = "toggle_sel";
         self.edit_notify(
             view_id,
@@ -402,12 +396,7 @@ impl Client {
         )
     }
 
-    pub fn click_range_select(
-    &self,
-    view_id: ViewId,
-        line: u64,
-        column: u64,
-    ) -> ClientResult<()> {
+    pub fn click_range_select(&self, view_id: ViewId, line: u64, column: u64) -> ClientResult<()> {
         let ty = "range_select";
         self.edit_notify(
             view_id,
@@ -416,12 +405,7 @@ impl Client {
         )
     }
 
-    pub fn click_line_select(
-    &self,
-    view_id: ViewId,
-        line: u64,
-        column: u64,
-    ) -> ClientResult<()> {
+    pub fn click_line_select(&self, view_id: ViewId, line: u64, column: u64) -> ClientResult<()> {
         let ty = "range_select";
         self.edit_notify(
             view_id,
@@ -430,12 +414,7 @@ impl Client {
         )
     }
 
-    pub fn click_word_select(
-    &self,
-    view_id: ViewId,
-        line: u64,
-        column: u64,
-    ) -> ClientResult<()> {
+    pub fn click_word_select(&self, view_id: ViewId, line: u64, column: u64) -> ClientResult<()> {
         let ty = "word_select";
         self.edit_notify(
             view_id,
@@ -445,8 +424,8 @@ impl Client {
     }
 
     pub fn click_multi_line_select(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         line: u64,
         column: u64,
     ) -> ClientResult<()> {
@@ -459,8 +438,8 @@ impl Client {
     }
 
     pub fn click_multi_word_select(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         line: u64,
         column: u64,
     ) -> ClientResult<()> {
@@ -486,8 +465,9 @@ impl Client {
         } else {
             json!({})
         };
-        let result = self.request("new_view", params)
-        .and_then(|result| from_value::<ViewId>(result).map_err(From::from));
+        let result = self
+            .request("new_view", params)
+            .and_then(|result| from_value::<ViewId>(result).map_err(From::from));
         Box::new(result)
     }
 
@@ -506,7 +486,11 @@ impl Client {
         Box::new(self.notify("set_theme", params).and_then(|_| Ok(())))
     }
 
-    pub fn client_started(&self, config_dir: Option<&str>, client_extras_dir: Option<&str>) -> ClientResult<()> {
+    pub fn client_started(
+        &self,
+        config_dir: Option<&str>,
+        client_extras_dir: Option<&str>,
+    ) -> ClientResult<()> {
         let mut params = Map::new();
         if let Some(path) = config_dir {
             let _ = params.insert("config_dir".into(), json!(path));
@@ -528,8 +512,8 @@ impl Client {
     }
 
     pub fn notify_plugin(
-    &self,
-    view_id: ViewId,
+        &self,
+        view_id: ViewId,
         plugin: &str,
         method: &str,
         params: &Value,
@@ -548,23 +532,31 @@ impl Client {
     pub fn outdent(&self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "outdent", None as Option<Value>)
     }
-    
+
     pub fn move_word_left(&self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "move_word_left", None as Option<Value>)
     }
-    
+
     pub fn move_word_right(&self, view_id: ViewId) -> ClientResult<()> {
         self.edit_notify(view_id, "move_word_right", None as Option<Value>)
     }
-    
+
     pub fn move_word_left_sel(&self, view_id: ViewId) -> ClientResult<()> {
-        self.edit_notify(view_id, "move_word_left_and_modify_selection", None as Option<Value>)
+        self.edit_notify(
+            view_id,
+            "move_word_left_and_modify_selection",
+            None as Option<Value>,
+        )
     }
-    
+
     pub fn move_word_right_sel(&self, view_id: ViewId) -> ClientResult<()> {
-        self.edit_notify(view_id, "move_word_right_and_modify_selection", None as Option<Value>)
+        self.edit_notify(
+            view_id,
+            "move_word_right_and_modify_selection",
+            None as Option<Value>,
+        )
     }
-    
+
     pub fn resize(&self, view_id: ViewId, width: i32, height: i32) -> ClientResult<()> {
         self.edit_notify(
             view_id,
@@ -575,7 +567,7 @@ impl Client {
             })),
         )
     }
-    
+
     pub fn replace(&self, view_id: ViewId, chars: &str, preserve_case: bool) -> ClientResult<()> {
         self.edit_notify(
             view_id,
@@ -601,7 +593,7 @@ impl Client {
             json!({ "view_id": view_id, "language_id": lang_name }),
         )
     }
-    
+
     //TODO: Use something more elegant than a `Value`
     pub fn modify_user_config(&self, domain: &str, changes: Value) -> ClientResult<()> {
         self.notify(
