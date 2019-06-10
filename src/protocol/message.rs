@@ -39,14 +39,8 @@ where
     D: Deserializer<'de>,
 {
     match JsonRpcResult::<Value, Value>::deserialize(deserializer)? {
-        JsonRpcResult::Result(value) => {
-            println!("{:?}", value);
-            Ok(Ok(value))
-        }
-        JsonRpcResult::Error(value) => {
-            println!("{:?}", value);
-            Ok(Err(value))
-        }
+        JsonRpcResult::Result(value) => Ok(Ok(value)),
+        JsonRpcResult::Error(value) => Ok(Err(value)),
     }
 }
 
