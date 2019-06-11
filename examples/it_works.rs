@@ -4,9 +4,7 @@ extern crate tokio;
 extern crate xrl;
 
 use futures::{Future, Stream};
-use xrl::{
-    spawn, Client, Frontend, FrontendBuilder, MeasureWidth, XiNotification,
-};
+use xrl::{spawn, Client, Frontend, FrontendBuilder, MeasureWidth, XiNotification};
 
 // Type that represent our client
 struct MyFrontend {

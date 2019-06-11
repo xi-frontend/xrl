@@ -24,8 +24,8 @@ where
         let (client, client_proxy) = InnerClient::new();
         let endpoint = Endpoint {
             stream: Transport::new(stream),
-            client: client,
             server: Server::new(builder.build(client_proxy.clone())),
+            client,
         };
         (endpoint, client_proxy)
     }
