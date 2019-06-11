@@ -23,7 +23,8 @@
 //! // Implement how our client handles notifications & requests from the core.
 //! impl Frontend for MyFrontend {
 //!
-//!     fn handle_notification(&mut self, notification: XiNotification) -> ServerResult<()> {
+//!     type NotificationResult = Result<(), ()>;
+//!     fn handle_notification(&mut self, notification: XiNotification) -> Self::NotificationResult {
 //!         use XiNotification::*;
 //!         match notification {
 //!             Update(update) => println!("received `update` from Xi core:\n{:?}", update),
@@ -42,18 +43,21 @@
 //!             AvailableLanguages(langs) => println!("received `available_languages` from Xi core:\n{:?}", langs),
 //!             LanguageChanged(lang) => println!("received `language_changed` from Xi core:\n{:?}", lang),
 //!         }
-//!         Box::new(future::ok(()))
+//!         Ok(())
 //!     }
 //!
-//!     fn handle_measure_width(&mut self, request: MeasureWidth) -> ServerResult<Vec<Vec<f32>>> {
-//!         Box::new(future::ok(Vec::new()))
+//!     type MeasureWidthResult = Result<Vec<Vec<f32>>, ()>;
+//!     fn handle_measure_width(&mut self, request: MeasureWidth) -> Self::MeasureWidthResult {
+//!         Ok(Vec::new())
 //!     }
 //! }
 //!
 //! struct MyFrontendBuilder;
 //!
-//! impl FrontendBuilder<MyFrontend> for MyFrontendBuilder {
-//!     fn build(self, client: Client) -> MyFrontend {
+//! impl FrontendBuilder for MyFrontendBuilder {
+//!
+//!     type Frontend = MyFrontend;
+//!     fn build(self, client: Client) -> Self::Frontend {
 //!         MyFrontend { client: client }
 //!     }
 //! }
