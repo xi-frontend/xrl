@@ -102,8 +102,8 @@ fn test_decode_message_ok() {
         result: Ok(Value::String(String::from("foo"))),
     };
     let actual: Response = serde_json::from_str(s).unwrap();
-    assert_eq!(actual.id, 1);
-    assert_eq!(actual.result, Ok(Value::String(String::from("foo"))));
+    assert_eq!(actual.id, expected.id);
+    assert_eq!(actual.result, expected.result);
 }
 
 #[test]
@@ -114,6 +114,6 @@ fn test_decode_message_err() {
         result: Err(Value::String(String::from("foo"))),
     };
     let actual: Response = serde_json::from_str(s).unwrap();
-    assert_eq!(actual.id, 1);
-    assert_eq!(actual.result, Err(Value::String(String::from("foo"))));
+    assert_eq!(actual.id, expected.id);
+    assert_eq!(actual.result, expected.result);
 }
