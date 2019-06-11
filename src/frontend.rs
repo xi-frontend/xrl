@@ -1,5 +1,5 @@
 use crate::client::Client;
-use crate::protocol::{endpoint::IntoStaticFuture, Client as InnerClient, Service, ServiceBuilder};
+use crate::protocol::{Client as InnerClient, IntoStaticFuture, Service, ServiceBuilder};
 use crate::structs::{
     Alert, AvailableLanguages, AvailablePlugins, AvailableThemes, ConfigChanged, FindStatus,
     LanguageChanged, MeasureWidth, PluginStarted, PluginStoped, ReplaceStatus, ScrollTo, Style,
