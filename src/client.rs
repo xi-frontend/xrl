@@ -605,5 +605,18 @@ impl Client {
         )
     }
 
+    pub fn request_lines(
+        &self,
+        view_id: ViewId,
+        first_line: u64,
+        last_line: u64,
+    ) -> ClientResult<()> {
+        self.edit_notify(
+            view_id,
+            "request_lines",
+            Some(json!([first_line, last_line])),
+        )
+    }
+
     // TODO: requests for plugin_rpc
 }
