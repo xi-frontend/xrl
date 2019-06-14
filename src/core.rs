@@ -47,12 +47,20 @@ impl AsyncWrite for Core {
     }
 }
 
-/// Start Xi core, and return a client and a stream of Xi's stderr lines.
+/// Start Xi core, and spawn an RPC client on the current tokio executor.
+///
+/// # Panics
+///
+/// This function calls
+/// [`tokio::spawn`](https://docs.rs/tokio/0.1.21/tokio/executor/fn.spawn.html)
+/// so it will panic if the default executor is not set or if spawning
+/// onto the default executor returns an error.
 pub fn spawn<B, F>(executable: &str, builder: B) -> (Client, CoreStderr)
 where
     F: Frontend + 'static + Send,
     B: FrontendBuilder<Frontend = F> + 'static,
 {
+    info!("starting xi-core");
     let mut xi_core = Command::new(executable)
         .stdout(Stdio::piped())
         .stdin(Stdio::piped())
@@ -70,10 +78,13 @@ where
         stdin,
     };
 
+
     let (endpoint, client) = Endpoint::new(core, builder);
-    ::std::thread::spawn(move || {
-        tokio::run(endpoint.map_err(|_| ()));
-    });
+
+    info!("spawning the Xi-RPC endpoint");
+    // XXX: THIS PANICS IF THE DEFAULT EXECUTOR IS NOT SET
+    tokio::spawn(endpoint.map_err(|e| error!("Endpoint exited with an error: {:?}", e)));
+
     (Client(client), CoreStderr::new(stderr))
 }
 
