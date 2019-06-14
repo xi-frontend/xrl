@@ -1,23 +1,27 @@
-#![allow(unused_variables)]
 extern crate futures;
 extern crate tokio;
 extern crate xrl;
 
-use futures::{Future, Stream};
-use xrl::{spawn, Client, Frontend, FrontendBuilder, MeasureWidth, XiNotification};
+use futures::{future, Future, Stream};
+use xrl::*;
 
-// Type that represent our client
+// Type that represent a `xi-core` peer. It implements `Frontend`,
+// which means it can handle notifications and requests from
+// `xi-core`.
+#[allow(dead_code)]
 struct MyFrontend {
-    #[allow(dead_code)]
+    // This is not actually used in this example, but if we wanted to
+    // our frontend could use a `Client` so that it could send
+    // requests and notifications to `xi-core`, instead of just
+    // handling incoming messages.
     client: Client,
 }
 
-// Implement how our client handles notifications and requests from the core.
+// Implement how our client handles notifications & requests from the core.
 impl Frontend for MyFrontend {
     type NotificationResult = Result<(), ()>;
     fn handle_notification(&mut self, notification: XiNotification) -> Self::NotificationResult {
         use XiNotification::*;
-
         match notification {
             Update(update) => println!("received `update` from Xi core:\n{:?}", update),
             ScrollTo(scroll) => println!("received `scroll_to` from Xi core:\n{:?}", scroll),
@@ -55,6 +59,9 @@ impl Frontend for MyFrontend {
     }
 
     type MeasureWidthResult = Result<Vec<Vec<f32>>, ()>;
+    // we don't actually use the `request` argument in this example,
+    // hence the attribute.
+    #[allow(unused_variables)]
     fn handle_measure_width(&mut self, request: MeasureWidth) -> Self::MeasureWidthResult {
         Ok(Vec::new())
     }
@@ -65,32 +72,46 @@ struct MyFrontendBuilder;
 impl FrontendBuilder for MyFrontendBuilder {
     type Frontend = MyFrontend;
     fn build(self, client: Client) -> Self::Frontend {
-        MyFrontend { client: client }
+        MyFrontend { client }
     }
 }
 
 fn main() {
-    // spawn Xi core
-    let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
+    tokio::run(future::lazy(move || {
+        // spawn Xi core
+        let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
 
-    // All clients must send client_started notification first
-    tokio::run(client.client_started(None, None).map_err(|_| ()));
-    // start logging Xi core's stderr
-    let log_core_errors = core_stderr
-        .for_each(|msg| {
-            println!("xi-core stderr: {}", msg);
-            Ok(())
-        })
-        .map_err(|_| ());
-    ::std::thread::spawn(move || {
-        tokio::run(log_core_errors);
-    });
-    // Send a request to open a new view, and print the result
-    let open_new_view = client
-        .new_view(None)
-        .map(|view_name| println!("opened new view: {}", view_name))
-        .map_err(|_| ());
-    tokio::run(open_new_view);
-    // sleep until xi-requests are received
-    ::std::thread::sleep(::std::time::Duration::new(5, 0));
+        // start logging Xi core's stderr
+        tokio::spawn(
+            core_stderr
+                .for_each(|msg| {
+                    println!("xi-core stderr: {}", msg);
+                    Ok(())
+                })
+                .map_err(|_| ()),
+        );
+
+        let client_clone = client.clone();
+        client
+            // Xi core expects the first notification to be
+            // "client_started"
+            .client_started(None, None)
+            .map_err(|e| eprintln!("failed to send \"client_started\": {:?}", e))
+            .and_then(move |_| {
+                let client = client_clone.clone();
+                client
+                    .new_view(None)
+                    .map(|view_name| println!("opened new view: {}", view_name))
+                    .map_err(|e| eprintln!("failed to open a new view: {:?}", e))
+                    .and_then(move |_| {
+                        // Forces to shut down the Xi-RPC
+                        // endoint. Otherwise, this example would keep
+                        // running until the xi-core process
+                        // terminates.
+                        println!("shutting down");
+                        client_clone.shutdown();
+                        Ok(())
+                    })
+            })
+    }));
 }
