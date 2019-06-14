@@ -102,6 +102,7 @@ impl InnerClient {
                 Ok(Async::Ready(None)) => {
                     warn!("client closed the notifications channel");
                     self.shutdown();
+                    break;
                 }
                 Err(()) => {
                     // I have no idea how this should be handled.
@@ -128,6 +129,7 @@ impl InnerClient {
                 Ok(Async::Ready(None)) => {
                     warn!("client closed the requests channel.");
                     self.shutdown();
+                    break;
                 }
                 Ok(Async::NotReady) => {
                     trace!("no new request from client");
