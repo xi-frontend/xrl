@@ -78,7 +78,6 @@ where
         stdin,
     };
 
-
     let (endpoint, client) = Endpoint::new(core, builder);
 
     info!("spawning the Xi-RPC endpoint");
