@@ -713,7 +713,7 @@ impl Client {
         view_id: ViewId,
         first_line: u64,
         last_line: u64,
-    ) -> ClientResult<()> {
+    ) -> impl Future<Item = (), Error = ClientError> {
         self.edit_notify(
             view_id,
             "request_lines",
