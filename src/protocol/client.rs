@@ -56,14 +56,16 @@ pub struct InnerClient {
     notifications_rx: NotificationRx,
     pending_requests: HashMap<u64, ResponseTx>,
     pending_notifications: Vec<AckTx>,
+    shutdown_rx: mpsc::UnboundedReceiver<()>,
 }
 
 impl InnerClient {
     pub fn new() -> (Self, Client) {
         let (requests_tx, requests_rx) = mpsc::unbounded();
         let (notifications_tx, notifications_rx) = mpsc::unbounded();
+        let (shutdown_tx, shutdown_rx) = mpsc::unbounded();
 
-        let client_proxy = Client::new(requests_tx, notifications_tx);
+        let client_proxy = Client::new(requests_tx, notifications_tx, shutdown_tx);
 
         let client = InnerClient {
             shutting_down: false,
@@ -72,6 +74,7 @@ impl InnerClient {
             notifications_rx,
             pending_requests: HashMap::new(),
             pending_notifications: Vec::new(),
+            shutdown_rx,
         };
 
         (client, client_proxy)
@@ -84,6 +87,37 @@ impl InnerClient {
 
     pub fn is_shutting_down(&self) -> bool {
         self.shutting_down
+    }
+
+    pub fn process_shutdown_signals(&mut self) {
+        trace!("polling shutdown signal channel");
+        loop {
+            match self.shutdown_rx.poll() {
+                Ok(Async::Ready(Some(()))) => {
+                    info!("Received shutdown signal");
+                    self.shutdown();
+                    // Note that in theory, we should continue polling
+                    // until NotReady, but since we're shutting down
+                    // anyway, the Endpoint is going to be dropped so
+                    // it does not matter if the rest of the IO events
+                    // are being polled or not.
+                    break;
+                }
+                Ok(Async::Ready(None)) => {
+                    warn!("client closed the shutdown signal channel");
+                    self.shutdown();
+                    break;
+                }
+                Ok(Async::NotReady) => {
+                    trace!("no shutdown signal from client");
+                    break;
+                }
+                Err(()) => {
+                    error!("an error occured while polling the shutdown signal channel");
+                    panic!("an error occured while polling the shutdown signal channel");
+                }
+            }
+        }
     }
 
     pub fn process_notifications<T: AsyncRead + AsyncWrite>(&mut self, stream: &mut Transport<T>) {
@@ -168,17 +202,30 @@ impl InnerClient {
     }
 }
 
+/// `Client` can be used to send Xi-RPC requests and notifications. It
+/// implements `Clone` so multiple clients can be instantiated. When
+/// all the `Client` instances are dropped, the Xi-RPC endoint shuts
+/// down. If the Xi-RPC endpoint shuts down while there are still
+/// `Client` instances, `Client::request()`, `Client::notify()` and
+/// `Client::shutdown()` can still be called on these instances, but
+/// will have no effect.
 #[derive(Clone)]
 pub struct Client {
     requests_tx: RequestTx,
     notifications_tx: NotificationTx,
+    shutdown_tx: mpsc::UnboundedSender<()>,
 }
 
 impl Client {
-    pub(in crate::r#mod) fn new(requests_tx: RequestTx, notifications_tx: NotificationTx) -> Self {
+    pub(in crate::r#mod) fn new(
+        requests_tx: RequestTx,
+        notifications_tx: NotificationTx,
+        shutdown_tx: mpsc::UnboundedSender<()>,
+    ) -> Self {
         Client {
             requests_tx,
             notifications_tx,
+            shutdown_tx,
         }
     }
 
@@ -215,6 +262,13 @@ impl Client {
         let (tx, rx) = oneshot::channel();
         let _ = mpsc::UnboundedSender::unbounded_send(&self.notifications_tx, (notification, tx));
         Ack(rx)
+    }
+
+    /// Forces the Xi-RPC endpoint to shut down. After this, the the
+    /// `request()`, `notify()` and `shutdown()` methods can still be
+    /// called but will have not effect.
+    pub fn shutdown(&self) {
+        let _ = mpsc::UnboundedSender::unbounded_send(&self.shutdown_tx, ());
     }
 }
 

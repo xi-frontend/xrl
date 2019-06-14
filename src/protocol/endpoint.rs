@@ -88,6 +88,7 @@ where
         let mut client_shutdown = false;
         self.client.process_requests(&mut self.stream);
         self.client.process_notifications(&mut self.stream);
+        self.client.process_shutdown_signals();
         if self.client.is_shutting_down() {
             warn!("Client shut down, exiting");
             client_shutdown = true;

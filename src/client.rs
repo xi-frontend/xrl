@@ -721,5 +721,9 @@ impl Client {
         )
     }
 
+    pub fn shutdown(&self) {
+        self.0.shutdown()
+    }
+
     // TODO: requests for plugin_rpc
 }
