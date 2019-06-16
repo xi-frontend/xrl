@@ -5,8 +5,6 @@
 //!
 //!
 //! ```rust
-//!
-//! #![allow(unused_variables)]
 //! extern crate futures;
 //! extern crate tokio;
 //! extern crate xrl;
@@ -14,74 +12,115 @@
 //! use futures::{future, Future, Stream};
 //! use xrl::*;
 //!
-//!
-//! // Type that represent our client
+//! // Type that represent a `xi-core` peer. It implements `Frontend`,
+//! // which means it can handle notifications and requests from
+//! // `xi-core`.
+//! #[allow(dead_code)]
 //! struct MyFrontend {
+//!     // This is not actually used in this example, but if we wanted to
+//!     // our frontend could use a `Client` so that it could send
+//!     // requests and notifications to `xi-core`, instead of just
+//!     // handling incoming messages.
 //!     client: Client,
 //! }
 //!
 //! // Implement how our client handles notifications & requests from the core.
 //! impl Frontend for MyFrontend {
-//!
-//!     fn handle_notification(&mut self, notification: XiNotification) -> ServerResult<()> {
+//!     type NotificationResult = Result<(), ()>;
+//!     fn handle_notification(&mut self, notification: XiNotification) -> Self::NotificationResult {
 //!         use XiNotification::*;
 //!         match notification {
 //!             Update(update) => println!("received `update` from Xi core:\n{:?}", update),
 //!             ScrollTo(scroll) => println!("received `scroll_to` from Xi core:\n{:?}", scroll),
 //!             DefStyle(style) => println!("received `def_style` from Xi core:\n{:?}", style),
-//!             AvailablePlugins(plugins) => println!("received `available_plugins` from Xi core:\n{:?}", plugins),
+//!             AvailablePlugins(plugins) => {
+//!                 println!("received `available_plugins` from Xi core:\n{:?}", plugins)
+//!             }
 //!             UpdateCmds(cmds) => println!("received `update_cmds` from Xi core:\n{:?}", cmds),
-//!             PluginStarted(plugin) => println!("received `plugin_started` from Xi core:\n{:?}", plugin),
-//!             PluginStoped(plugin) => println!("received `plugin_stoped` from Xi core:\n{:?}", plugin),
-//!             ConfigChanged(config) => println!("received `config_changed` from Xi core:\n{:?}", config),
+//!             PluginStarted(plugin) => {
+//!                 println!("received `plugin_started` from Xi core:\n{:?}", plugin)
+//!             }
+//!             PluginStoped(plugin) => {
+//!                 println!("received `plugin_stoped` from Xi core:\n{:?}", plugin)
+//!             }
+//!             ConfigChanged(config) => {
+//!                 println!("received `config_changed` from Xi core:\n{:?}", config)
+//!             }
 //!             ThemeChanged(theme) => println!("received `theme_changed` from Xi core:\n{:?}", theme),
 //!             Alert(alert) => println!("received `alert` from Xi core:\n{:?}", alert),
-//!             AvailableThemes(themes) => println!("received `available_themes` from Xi core:\n{:?}", themes),
+//!             AvailableThemes(themes) => {
+//!                 println!("received `available_themes` from Xi core:\n{:?}", themes)
+//!             }
 //!             FindStatus(status) => println!("received `find_status` from Xi core:\n{:?}", status),
-//!             ReplaceStatus(status) => println!("received `replace_status` from Xi core:\n{:?}", status),
-//!             AvailableLanguages(langs) => println!("received `available_languages` from Xi core:\n{:?}", langs),
-//!             LanguageChanged(lang) => println!("received `language_changed` from Xi core:\n{:?}", lang),
+//!             ReplaceStatus(status) => {
+//!                 println!("received `replace_status` from Xi core:\n{:?}", status)
+//!             }
+//!             AvailableLanguages(langs) => {
+//!                 println!("received `available_languages` from Xi core:\n{:?}", langs)
+//!             }
+//!             LanguageChanged(lang) => {
+//!                 println!("received `language_changed` from Xi core:\n{:?}", lang)
+//!             }
 //!         }
-//!         Box::new(future::ok(()))
+//!         Ok(())
 //!     }
 //!
-//!     fn handle_measure_width(&mut self, request: MeasureWidth) -> ServerResult<Vec<Vec<f32>>> {
-//!         Box::new(future::ok(Vec::new()))
+//!     type MeasureWidthResult = Result<Vec<Vec<f32>>, ()>;
+//!     // we don't actually use the `request` argument in this example,
+//!     // hence the attribute.
+//!     #[allow(unused_variables)]
+//!     fn handle_measure_width(&mut self, request: MeasureWidth) -> Self::MeasureWidthResult {
+//!         Ok(Vec::new())
 //!     }
 //! }
 //!
 //! struct MyFrontendBuilder;
 //!
-//! impl FrontendBuilder<MyFrontend> for MyFrontendBuilder {
-//!     fn build(self, client: Client) -> MyFrontend {
-//!         MyFrontend { client: client }
+//! impl FrontendBuilder for MyFrontendBuilder {
+//!     type Frontend = MyFrontend;
+//!     fn build(self, client: Client) -> Self::Frontend {
+//!         MyFrontend { client }
 //!     }
 //! }
 //!
 //! fn main() {
+//!     tokio::run(future::lazy(move || {
+//!         // spawn Xi core
+//!         let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
 //!
-//!     // spawn Xi core
-//!     let (mut client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
+//!         // start logging Xi core's stderr
+//!         tokio::spawn(
+//!             core_stderr
+//!                 .for_each(|msg| {
+//!                     println!("xi-core stderr: {}", msg);
+//!                     Ok(())
+//!                 })
+//!                 .map_err(|_| ()),
+//!         );
 //!
-//!     // All clients must send client_started notification first
-//!     tokio::run(client.client_started(None, None).map_err(|_|()));
-//!     // start logging Xi core's stderr
-//!     let log_core_errors = core_stderr
-//!         .for_each(|msg| {
-//!             println!("xi-core stderr: {}", msg);
-//!             Ok(())
-//!         })
-//!         .map_err(|_| ());
-//!
-//!     ::std::thread::spawn(move || {
-//!         tokio::run(log_core_errors);
-//!     });
-//!
-//!     // Send a request to open a new view, and print the result
-//!     let open_new_view = client
-//!         .new_view(None)
-//!         .map(|view_name| println!("opened new view: {}", view_name));
-//!     tokio::run(open_new_view.map_err(|_| ()));
+//!         let client_clone = client.clone();
+//!         client
+//!             // Xi core expects the first notification to be
+//!             // "client_started"
+//!             .client_started(None, None)
+//!             .map_err(|e| eprintln!("failed to send \"client_started\": {:?}", e))
+//!             .and_then(move |_| {
+//!                 let client = client_clone.clone();
+//!                 client
+//!                     .new_view(None)
+//!                     .map(|view_name| println!("opened new view: {}", view_name))
+//!                     .map_err(|e| eprintln!("failed to open a new view: {:?}", e))
+//!                     .and_then(move |_| {
+//!                         // Forces to shut down the Xi-RPC
+//!                         // endoint. Otherwise, this example would keep
+//!                         // running until the xi-core process
+//!                         // terminates.
+//!                         println!("shutting down");
+//!                         client_clone.shutdown();
+//!                         Ok(())
+//!                     })
+//!             })
+//!     }));
 //! }
 //! ```
 
@@ -104,10 +143,11 @@ mod protocol;
 mod structs;
 
 pub use crate::cache::LineCache;
-pub use crate::client::{Client, ClientResult};
+pub use crate::client::Client;
 pub use crate::core::{spawn, CoreStderr};
 pub use crate::errors::{ClientError, ServerError};
-pub use crate::frontend::{Frontend, FrontendBuilder, ServerResult, XiNotification};
+pub use crate::frontend::{Frontend, FrontendBuilder, XiNotification};
+pub use crate::protocol::IntoStaticFuture;
 pub use crate::structs::{
     Alert, AvailableLanguages, AvailablePlugins, AvailableThemes, ConfigChanged, ConfigChanges,
     FindStatus, LanguageChanged, Line, MeasureWidth, ModifySelection, Operation, OperationType,
