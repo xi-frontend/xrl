@@ -248,8 +248,8 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         let mut last_line = self.new_lines.iter().filter_map(|(_, line)| line.line_num).max().unwrap_or(0);
         self.new_lines.extend(lines.drain(..).map(|mut line| {
             trim_new_line(&mut line.text);
-            last_line = last_line + 1;
-            ((last_line-1) as u64, line)
+            last_line += 1;
+            ((last_line) as u64, line)
         }));
     }
 
