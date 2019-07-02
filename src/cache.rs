@@ -48,7 +48,7 @@ impl LineCache {
             old_lines: lines,
             old_invalid_before: invalid_before,
             old_invalid_after: invalid_after,
-            new_lines: Vec::new(),
+            new_lines: HashMap::new(),
             new_invalid_before: 0,
             new_invalid_after: 0,
         };
@@ -123,7 +123,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             // case 1: the are more (or equal) valid lines than lines to copy
 
             // the range of lines to copy: from the start to nb_lines - 1;
-            range = nb_lines as usize;
+            range = 0..nb_lines as usize;
 
             // after the copy, we won't have any line remaining to copy
             nb_lines = 0;
@@ -131,7 +131,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             // case 2: there are more lines to copy than valid lines
 
             // we copy all the valid lines
-            range = nb_valid_lines;
+            range = 0..nb_valid_lines;
 
             // after the operation we'll have (nb_lines - nb_valid_lines) left to copy
             nb_lines -= nb_valid_lines as u64;
@@ -145,24 +145,24 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
                 // its *new* line number, given by the "copy"
                 // operation. This will be used to update the line
                 // number for all the lines we copy.
-                old_lines
+                let num = old_lines
                     .iter()
-                    .find_map(|line| {
-                        line.line_num
-                            .map(|num| new_first_line_num as i64 - num as i64)
-                    })
-                    .unwrap_or(0)
+                    .filter_map(|(_, line)| line.line_num)
+                    .min()
+                    .unwrap();
+
+                new_first_line_num.saturating_sub(num)
             } else {
                 // if the "copy" operation does not specify a new line
                 // number, just set the diff to 0
                 0
             };
 
-            let copied_lines = old_lines.drain().take(range).map(|mut line| {
+            let copied_lines = range.filter_map(|i| old_lines.remove_entry(&(i as u64))).map(|(i, mut line)| {
                 line.line_num = line
                     .line_num
-                    .map(|line_num| (line_num as i64 + diff) as u64);
-                line
+                    .map(|line_num| line_num + diff);
+                (i, line)
             });
             new_lines.extend(copied_lines);
         }
@@ -213,10 +213,11 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         // Skip the valid lines
         let nb_valid_lines = old_lines.len();
         if nb_lines < nb_valid_lines as u64 {
-            old_lines.drain().take(nb_lines as usize).last();
+            let range = 0..nb_lines;
+            range.map(|i| old_lines.remove(&i)).last();;
             return;
         } else {
-            old_lines.drain().take(nb_lines as usize).last();
+            old_lines.clear();
             nb_lines -= nb_valid_lines as u64;
         }
 
@@ -244,9 +245,11 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
 
     fn apply_insert(&mut self, mut lines: Vec<Line>) {
         debug!("inserting {} lines", lines.len());
+        let mut last_line = self.new_lines.iter().filter_map(|(_, line)| line.line_num).max().unwrap_or(0);
         self.new_lines.extend(lines.drain(..).map(|mut line| {
             trim_new_line(&mut line.text);
-            line
+            last_line = last_line + 1;
+            ((last_line-1) as u64, line)
         }));
     }
 
@@ -265,15 +268,17 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             );
             panic!("failed to update the cache");
         }
+
+        let range = 0..nb_lines;
+
         new_lines.extend(
-            old_lines
-                .drain()
-                .take(nb_lines as usize)
+            range
+                .filter_map(|i| old_lines.remove_entry(&i))
                 .zip(lines.into_iter())
-                .map(|(mut old_line, update)| {
+                .map(|((i, mut old_line), update)| {
                     old_line.cursor = update.cursor;
                     old_line.styles = update.styles;
-                    old_line
+                    (i, old_line)
                 }),
         )
     }
