@@ -1,10 +1,11 @@
 use crate::{Line, Operation, OperationType, Update};
+use std::collections::HashMap;
 
 /// Line cache struct to work with xi update protocol.
 #[derive(Clone, Debug, Default)]
 pub struct LineCache {
     invalid_before: u64,
-    lines: Vec<Line>,
+    lines: HashMap<u64, Line>,
     invalid_after: u64,
 }
 
@@ -22,7 +23,7 @@ impl LineCache {
     }
 
     /// Retrieve all lines in the cache.
-    pub fn lines(&self) -> &Vec<Line> {
+    pub fn lines(&self) -> &HashMap<u64, Line> {
         &self.lines
     }
 
@@ -61,10 +62,10 @@ impl LineCache {
 
 #[derive(Debug)]
 struct UpdateHelper<'a, 'b, 'c> {
-    old_lines: &'a mut Vec<Line>,
+    old_lines: &'a mut HashMap<u64, Line>,
     old_invalid_before: &'b mut u64,
     old_invalid_after: &'c mut u64,
-    new_lines: Vec<Line>,
+    new_lines: HashMap<u64, Line>,
     new_invalid_before: u64,
     new_invalid_after: u64,
 }
@@ -122,7 +123,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             // case 1: the are more (or equal) valid lines than lines to copy
 
             // the range of lines to copy: from the start to nb_lines - 1;
-            range = 0..nb_lines as usize;
+            range = nb_lines as usize;
 
             // after the copy, we won't have any line remaining to copy
             nb_lines = 0;
@@ -130,7 +131,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             // case 2: there are more lines to copy than valid lines
 
             // we copy all the valid lines
-            range = 0..nb_valid_lines;
+            range = nb_valid_lines;
 
             // after the operation we'll have (nb_lines - nb_valid_lines) left to copy
             nb_lines -= nb_valid_lines as u64;
@@ -157,7 +158,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
                 0
             };
 
-            let copied_lines = old_lines.drain(range).map(|mut line| {
+            let copied_lines = old_lines.drain().take(range).map(|mut line| {
                 line.line_num = line
                     .line_num
                     .map(|line_num| (line_num as i64 + diff) as u64);
@@ -174,7 +175,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         // STEP 3: Handle the remaining invalid lines
         // ------------------------------------------------------------
 
-        // We should have at least enought invalid lines to copy, otherwise it indicates there's a
+        // We should have at least enough invalid lines to copy, otherwise it indicates there's a
         // problem, and we panic.
         if **old_invalid_after >= nb_lines {
             **old_invalid_after -= nb_lines;
@@ -212,10 +213,10 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         // Skip the valid lines
         let nb_valid_lines = old_lines.len();
         if nb_lines < nb_valid_lines as u64 {
-            old_lines.drain(0..nb_lines as usize).last();
+            old_lines.drain().take(nb_lines as usize).last();
             return;
         } else {
-            old_lines.drain(..).last();
+            old_lines.drain().take(nb_lines as usize).last();
             nb_lines -= nb_valid_lines as u64;
         }
 
@@ -266,7 +267,8 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         }
         new_lines.extend(
             old_lines
-                .drain(0..nb_lines as usize)
+                .drain()
+                .take(nb_lines as usize)
                 .zip(lines.into_iter())
                 .map(|(mut old_line, update)| {
                     old_line.cursor = update.cursor;
