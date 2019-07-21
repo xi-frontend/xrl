@@ -20,7 +20,7 @@ where
     pub fn send(&mut self, message: Message) {
         debug!("sending message to remote peer: {:?}", message);
         match self.start_send(message) {
-            Ok(AsyncSink::Ready) => return,
+            Ok(AsyncSink::Ready) => (),
             // FIXME: there should probably be a retry mechanism.
             Ok(AsyncSink::NotReady(_message)) => panic!("The sink is full."),
             Err(e) => panic!("An error occured while trying to send message: {:?}", e),
