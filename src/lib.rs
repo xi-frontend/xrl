@@ -86,7 +86,7 @@
 //! fn main() {
 //!     tokio::run(future::lazy(move || {
 //!         // spawn Xi core
-//!         let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {});
+//!         let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {}).unwrap();
 //!
 //!         // start logging Xi core's stderr
 //!         tokio::spawn(

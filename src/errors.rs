@@ -2,6 +2,7 @@ use serde_json::error::Error as SerdeError;
 use serde_json::Value;
 use std::error;
 use std::fmt;
+use std::io::Error as IoError;
 
 #[derive(Debug)]
 pub enum ClientError {
@@ -16,6 +17,9 @@ pub enum ClientError {
 
     /// The server response is an error
     ErrorReturned(Value),
+
+    /// We failed to spawn xi-core, e.g. because it's not installed, the binary is faulty, etc.
+    CoreSpawnFailed(IoError),
 }
 
 impl fmt::Display for ClientError {
@@ -31,6 +35,9 @@ impl fmt::Display for ClientError {
             ClientError::SerializeFailed(ref e) => {
                 write!(f, "failed to serialize a message: {}", e)
             }
+            ClientError::CoreSpawnFailed(ref s) => {
+                write!(f, "Failed to spawn xi-core due to error: {}", s)
+            }
         }
     }
 }
@@ -41,15 +48,16 @@ impl error::Error for ClientError {
             ClientError::NotifyFailed => "Failed to send a notification",
             ClientError::RequestFailed => "Failed to send a request or receive its response",
             ClientError::ErrorReturned(_) => "The core answered with an error",
-            ClientError::SerializeFailed(_) => "failed to serialize message",
+            ClientError::SerializeFailed(_) => "Failed to serialize message",
+            ClientError::CoreSpawnFailed(_) => "Failed to spawn xi-core",
         }
     }
 
     fn cause(&self) -> Option<&dyn error::Error> {
-        if let ClientError::SerializeFailed(ref serde_error) = *self {
-            Some(serde_error)
-        } else {
-            None
+        match *self {
+            ClientError::SerializeFailed(ref serde_error) => Some(serde_error),
+            ClientError::CoreSpawnFailed(ref io_error) => Some(io_error),
+            _ => None,
         }
     }
 }
@@ -57,6 +65,12 @@ impl error::Error for ClientError {
 impl From<SerdeError> for ClientError {
     fn from(err: SerdeError) -> Self {
         ClientError::SerializeFailed(err)
+    }
+}
+
+impl From<IoError> for ClientError {
+    fn from(err: IoError) -> Self {
+        ClientError::CoreSpawnFailed(err)
     }
 }
 

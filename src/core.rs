@@ -1,6 +1,7 @@
 use crate::client::Client;
 use crate::frontend::{Frontend, FrontendBuilder};
 use crate::protocol::Endpoint;
+use crate::ClientError;
 use bytes::BytesMut;
 use futures::{Future, Poll, Stream};
 use std::io::{self, Read, Write};
@@ -55,7 +56,7 @@ impl AsyncWrite for Core {
 /// [`tokio::spawn`](https://docs.rs/tokio/0.1.21/tokio/executor/fn.spawn.html)
 /// so it will panic if the default executor is not set or if spawning
 /// onto the default executor returns an error.
-pub fn spawn<B, F>(executable: &str, builder: B) -> (Client, CoreStderr)
+pub fn spawn<B, F>(executable: &str, builder: B) -> Result<(Client, CoreStderr), ClientError>
 where
     F: Frontend + 'static + Send,
     B: FrontendBuilder<Frontend = F> + 'static,
@@ -66,8 +67,7 @@ where
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
         .env("RUST_BACKTRACE", "1")
-        .spawn_async()
-        .expect("failed to spawn xi-core");
+        .spawn_async()?;
 
     let stdout = xi_core.stdout().take().unwrap();
     let stdin = xi_core.stdin().take().unwrap();
@@ -84,7 +84,7 @@ where
     // XXX: THIS PANICS IF THE DEFAULT EXECUTOR IS NOT SET
     tokio::spawn(endpoint.map_err(|e| error!("Endpoint exited with an error: {:?}", e)));
 
-    (Client(client), CoreStderr::new(stderr))
+    Ok((Client(client), CoreStderr::new(stderr)))
 }
 
 pub struct LineCodec;
