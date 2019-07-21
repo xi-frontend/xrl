@@ -217,7 +217,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub(in crate::r#mod) fn new(
+    fn new(
         requests_tx: RequestTx,
         notifications_tx: NotificationTx,
         shutdown_tx: mpsc::UnboundedSender<()>,
