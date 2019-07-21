@@ -44,7 +44,7 @@ where
         trace!("flushing stream");
         match self.stream.poll_complete() {
             Ok(Async::Ready(())) => self.client.acknowledge_notifications(),
-            Ok(Async::NotReady) => return,
+            Ok(Async::NotReady) => (),
             Err(e) => panic!("Failed to flush the sink: {:?}", e),
         }
     }
