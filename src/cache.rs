@@ -246,11 +246,18 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
 
     fn apply_insert(&mut self, mut lines: Vec<Line>) {
         debug!("inserting {} lines", lines.len());
-        let mut last_line = self.new_lines.keys().max().cloned().unwrap_or(0);
+        // We need to insert at last line +1, but we still want to start counting from 0
+        // for the first line.
+        let mut last_line: i64 = if let Some(num) = self.new_lines.keys().max() {
+            *num as i64
+        } else {
+            -1
+        };
+
         self.new_lines.extend(lines.drain(..).map(|mut line| {
             trim_new_line(&mut line.text);
-            let ret = (last_line, line);
             last_line += 1;
+            let ret = (last_line as u64, line);
             ret
         }));
     }
