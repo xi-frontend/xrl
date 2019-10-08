@@ -1,5 +1,5 @@
 use crate::{Line, Operation, OperationType, Update};
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 /// Line cache struct to work with xi update protocol.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -10,6 +10,11 @@ pub struct LineCache {
 }
 
 impl LineCache {
+    /// Get a new instance of LineCache
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Retrieve the number of invalid lines before
     /// the start of the line cache.
     pub fn before(&self) -> u64 {
@@ -22,6 +27,9 @@ impl LineCache {
         self.invalid_after
     }
 
+    pub fn get_line(&self, n: u64) -> Option<&Line> {
+        self.lines.get(&n)
+    }
     /// Retrieve all lines in the cache.
     pub fn lines(&self) -> &HashMap<u64, Line> {
         &self.lines
@@ -158,7 +166,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
                 0
             };
 
-            let copied_lines = range.map(|i| old_lines.remove_entry(&(i as u64)).unwrap()).map(|(i, mut line)| {
+            let copied_lines = range.filter_map(|i| old_lines.remove_entry(&(i as u64))).map(|(i, mut line)| {
                 line.line_num = line
                     .line_num
                     .map(|line_num| (line_num as i64 + diff) as u64);
@@ -166,6 +174,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             });
 
             new_lines.extend(copied_lines);
+
         }
 
         // if there are no more lines to copy we're done
