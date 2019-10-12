@@ -4,7 +4,7 @@ use super::line::Line;
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub enum OperationType {
-    Copy_,
+    Copy,
     Skip,
     Invalidate,
     Update,
@@ -30,7 +30,7 @@ where
 {
     let value: json::Value = serde::Deserialize::deserialize(de)?;
     match value {
-        json::Value::String(ref s) if &*s == "copy" => Ok(OperationType::Copy_),
+        json::Value::String(ref s) if &*s == "copy" => Ok(OperationType::Copy),
         json::Value::String(ref s) if &*s == "skip" => Ok(OperationType::Skip),
         json::Value::String(ref s) if &*s == "invalidate" => Ok(OperationType::Invalidate),
         json::Value::String(ref s) if &*s == "update" => Ok(OperationType::Update),
@@ -122,7 +122,7 @@ fn deserialize_copy() {
     use serde_json;
     let s = r#"{"ln":3,"n":1,"op":"copy"}"#;
     let operation = Operation {
-        operation_type: OperationType::Copy_,
+        operation_type: OperationType::Copy,
         line_num: Some(3),
         nb_lines: 1,
         lines: Vec::new(),

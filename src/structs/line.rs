@@ -13,7 +13,7 @@ pub struct Line {
     pub text: String,
     #[serde(default)]
     pub cursor: Vec<u64>,
-    #[serde(deserialize_with = "deserialize_styles")]
+    #[serde(default, deserialize_with = "deserialize_styles")]
     pub styles: Vec<StyleDef>,
     #[serde(rename = "ln")]
     pub line_num: Option<u64>,

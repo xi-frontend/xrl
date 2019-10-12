@@ -38,19 +38,12 @@ impl LineCache {
             "operations to be applied to the line cache: {:?}",
             &update.operations
         );
-        let LineCache {
-            ref mut lines,
-            ref mut invalid_before,
-            ref mut invalid_after,
-        } = *self;
-        let helper = UpdateHelper {
-            old_lines: lines,
-            old_invalid_before: invalid_before,
-            old_invalid_after: invalid_after,
-            new_lines: Vec::new(),
-            new_invalid_before: 0,
-            new_invalid_after: 0,
+
+        let mut helper = UpdateHelper {
+            old_cache: self,
+            new_cache: LineCache::default(),
         };
+
         helper.update(update.operations);
     }
 
@@ -60,27 +53,40 @@ impl LineCache {
 }
 
 #[derive(Debug)]
-struct UpdateHelper<'a, 'b, 'c> {
-    old_lines: &'a mut Vec<Line>,
-    old_invalid_before: &'b mut u64,
-    old_invalid_after: &'c mut u64,
-    new_lines: Vec<Line>,
-    new_invalid_before: u64,
-    new_invalid_after: u64,
+// This struct manages the modification of the given LineCache by the
+// updates received from xi-core.
+//
+// Its main workflow is to borrow a LineCache as "old_cache" and then
+// call the primary method, UpdateHelper::update(), which accepts an
+// Update object and then calculates the new cache as a function
+// f(old_cache, update)->new_cache as specified by the xi frontend
+// protocol.
+//
+// UpdateHelper is using an internal variable "new_cache" local to
+// UpdateHelper for holding the current state of the cache. In the end
+// of update(), the content of new_cache is written into old_cache.
+struct UpdateHelper<'a> {
+    old_cache: &'a mut LineCache,
+    new_cache: LineCache,
 }
 
-impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
+impl<'a> UpdateHelper<'a> {
     fn apply_copy(&mut self, nb_lines: u64, first_line_num: Option<u64>) {
         debug!("copying {} lines", nb_lines);
         let UpdateHelper {
-            ref mut old_lines,
-            ref mut old_invalid_before,
-            ref mut old_invalid_after,
-            ref mut new_lines,
-            ref mut new_invalid_before,
-            ref mut new_invalid_after,
-            ..
-        } = *self;
+            old_cache:
+                LineCache {
+                    invalid_before: ref mut old_invalid_before,
+                    lines: ref mut old_lines,
+                    invalid_after: ref mut old_invalid_after,
+                },
+            new_cache:
+                LineCache {
+                    invalid_before: ref mut new_invalid_before,
+                    lines: ref mut new_lines,
+                    invalid_after: ref mut new_invalid_after,
+                },
+        } = self;
 
         // The number of lines left to copy
         let mut nb_lines = nb_lines;
@@ -88,28 +94,28 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         // STEP 1: Handle the invalid lines that precede the valid ones
         // ------------------------------------------------------------
 
-        if **old_invalid_before >= nb_lines {
+        if *old_invalid_before >= nb_lines {
             // case 1: there are more (or equal) invalid lines than lines to copy
 
             // decrement old_invalid_lines by nb_lines
-            **old_invalid_before -= nb_lines;
+            *old_invalid_before -= nb_lines;
 
             // and increment new_invalid_lines by the same amount
             *new_invalid_before += nb_lines;
 
             // there is no more line to copy so we're done
             return;
-        } else if **old_invalid_after > 0 {
+        } else {
             // case 2: there are more lines to copy than invalid lines
 
             // decrement the nb of lines to copy by the number of invalid lines
-            nb_lines -= **old_invalid_before;
+            nb_lines -= *old_invalid_before;
 
             // increment new_invalid_lines by the same amount
-            *new_invalid_before += **old_invalid_before;
+            *new_invalid_before += *old_invalid_before;
 
             // we don't have any invalid lines left
-            **old_invalid_before = 0;
+            *old_invalid_before = 0;
         }
 
         // STEP 2: Handle the valid lines
@@ -174,15 +180,15 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         // STEP 3: Handle the remaining invalid lines
         // ------------------------------------------------------------
 
-        // We should have at least enought invalid lines to copy, otherwise it indicates there's a
+        // We should have at least enough invalid lines to copy, otherwise it indicates there's a
         // problem, and we panic.
-        if **old_invalid_after >= nb_lines {
-            **old_invalid_after -= nb_lines;
+        if *old_invalid_after >= nb_lines {
+            *old_invalid_after -= nb_lines;
             *new_invalid_after += nb_lines;
         } else {
             error!(
                 "{} lines left to copy, but only {} lines in the old cache",
-                nb_lines, **old_invalid_after
+                nb_lines, *old_invalid_after
             );
             panic!("cache update failed");
         }
@@ -191,22 +197,21 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
     fn apply_skip(&mut self, nb_lines: u64) {
         debug!("skipping {} lines", nb_lines);
 
-        let UpdateHelper {
-            ref mut old_lines,
-            ref mut old_invalid_before,
-            ref mut old_invalid_after,
-            ..
-        } = *self;
+        let LineCache {
+            invalid_before: ref mut old_invalid_before,
+            lines: ref mut old_lines,
+            invalid_after: ref mut old_invalid_after,
+        } = self.old_cache;
 
         let mut nb_lines = nb_lines;
 
-        // Skip invalid lines that comes before the valid ones.
-        if **old_invalid_before > nb_lines {
-            **old_invalid_before -= nb_lines;
+        // Skip invalid lines that come before the valid ones.
+        if *old_invalid_before > nb_lines {
+            *old_invalid_before -= nb_lines;
             return;
-        } else if **old_invalid_before > 0 {
-            nb_lines -= **old_invalid_before;
-            **old_invalid_before = 0;
+        } else if *old_invalid_before > 0 {
+            nb_lines -= *old_invalid_before;
+            *old_invalid_before = 0;
         }
 
         // Skip the valid lines
@@ -220,30 +225,30 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         }
 
         // Skip the remaining invalid lines
-        if **old_invalid_after >= nb_lines {
-            **old_invalid_after -= nb_lines;
+        if *old_invalid_after >= nb_lines {
+            *old_invalid_after -= nb_lines;
             return;
         }
 
         error!(
             "{} lines left to skip, but only {} lines in the old cache",
-            nb_lines, **old_invalid_after
+            nb_lines, *old_invalid_after
         );
         panic!("cache update failed");
     }
 
     fn apply_invalidate(&mut self, nb_lines: u64) {
         debug!("invalidating {} lines", nb_lines);
-        if self.new_lines.is_empty() {
-            self.new_invalid_before += nb_lines;
+        if self.new_cache.lines.is_empty() {
+            self.new_cache.invalid_before += nb_lines;
         } else {
-            self.new_invalid_after += nb_lines;
+            self.new_cache.invalid_after += nb_lines;
         }
     }
 
     fn apply_insert(&mut self, mut lines: Vec<Line>) {
         debug!("inserting {} lines", lines.len());
-        self.new_lines.extend(lines.drain(..).map(|mut line| {
+        self.new_cache.lines.extend(lines.drain(..).map(|mut line| {
             trim_new_line(&mut line.text);
             line
         }));
@@ -251,11 +256,9 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
 
     fn apply_update(&mut self, nb_lines: u64, lines: Vec<Line>) {
         debug!("updating {} lines", nb_lines);
-        let UpdateHelper {
-            ref mut old_lines,
-            ref mut new_lines,
-            ..
-        } = *self;
+        let old_lines = &mut self.old_cache.lines;
+        let new_lines = &mut self.new_cache.lines;
+
         if nb_lines > old_lines.len() as u64 {
             error!(
                 "{} lines to update, but only {} lines in cache",
@@ -264,6 +267,7 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
             );
             panic!("failed to update the cache");
         }
+
         new_lines.extend(
             old_lines
                 .drain(0..nb_lines as usize)
@@ -276,25 +280,29 @@ impl<'a, 'b, 'c> UpdateHelper<'a, 'b, 'c> {
         )
     }
 
-    fn update(mut self, operations: Vec<Operation>) {
+    fn update(&mut self, operations: Vec<Operation>) {
+        self.new_cache = LineCache::default();
+
         trace!("updating the line cache");
-        trace!("cache state before: {:?}", &self);
+        trace!("cache state before: {:?}", self);
         trace!("operations to be applied: {:?}", &operations);
+
         for op in operations {
             debug!("operation: {:?}", &op);
-            debug!("cache helper before operation {:?}", &self);
+            debug!("cache helper before operation {:?}", self);
+
             match op.operation_type {
-                OperationType::Copy_ => (&mut self).apply_copy(op.nb_lines, op.line_num),
-                OperationType::Skip => (&mut self).apply_skip(op.nb_lines),
-                OperationType::Invalidate => (&mut self).apply_invalidate(op.nb_lines),
-                OperationType::Insert => (&mut self).apply_insert(op.lines),
-                OperationType::Update => (&mut self).apply_update(op.nb_lines, op.lines),
+                OperationType::Copy => self.apply_copy(op.nb_lines, op.line_num),
+                OperationType::Skip => self.apply_skip(op.nb_lines),
+                OperationType::Invalidate => self.apply_invalidate(op.nb_lines),
+                OperationType::Insert => self.apply_insert(op.lines),
+                OperationType::Update => self.apply_update(op.nb_lines, op.lines),
             }
-            debug!("cache helper after operation {:?}", &self);
+
+            debug!("cache helper after operation {:?}", self);
         }
-        *self.old_lines = self.new_lines;
-        *self.old_invalid_before = self.new_invalid_before;
-        *self.old_invalid_after = self.new_invalid_after;
+
+        std::mem::swap(self.old_cache, &mut self.new_cache);
     }
 }
 
@@ -302,4 +310,59 @@ fn trim_new_line(text: &mut String) {
     if let Some('\n') = text.chars().last() {
         text.pop();
     }
+}
+
+#[test]
+// This test simulates a simple edit operation on a LineCache.
+fn test_cache_edit() {
+    let mut cache = LineCache {
+        invalid_before: 0,
+        lines: serde_json::from_str::<Vec<Line>>(
+            r#"
+               [
+                 {"text":"line1", "ln":1},
+                 {"text":"line2", "ln":2},
+                 {"text":"line3", "ln":3},
+                 {"text":"line4", "ln":4},
+                 {"text":"line5", "ln":5}
+               ]
+            "#,
+        )
+        .unwrap(),
+        invalid_after: 0,
+    };
+
+    let upd = Update {
+        operations: serde_json::from_str::<Vec<Operation>>(
+            r#"
+               [
+                 {"op":"copy", "n":1},
+                 {"op":"ins",  "n":2, "lines": [
+                                                 {"text":"new_line2", "ln":2},
+                                                 {"text":"new_line3", "ln":3}
+                                               ]},
+                 {"op":"skip", "n":2},
+                 {"op":"copy", "n":2}
+               ]
+            "#,
+        )
+        .unwrap(),
+        pristine: true,
+        rev: None,
+        view_id: std::str::FromStr::from_str("view-id-1").unwrap(),
+    };
+
+    cache.update(upd);
+
+    assert_eq!(
+        cache.lines,
+        serde_json::from_str::<Vec<Line>>(
+            r#"[{"text":"line1",     "ln":1},
+                       {"text":"new_line2", "ln":2},
+                       {"text":"new_line3", "ln":3},
+                       {"text":"line4",     "ln":4},
+                       {"text":"line5",     "ln":5}]"#
+        )
+        .unwrap()
+    );
 }
