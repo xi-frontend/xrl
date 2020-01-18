@@ -693,6 +693,35 @@ impl Client {
         )
     }
 
+    pub fn selection_for_find(
+        &self,
+        view_id: ViewId,
+        case_sensitive: bool,
+    ) -> impl Future<Item = (), Error = ClientError> {
+        self.notify(
+            "selection_for_find",
+            json!({ "view_id": view_id, "case_sensitive": case_sensitive }),
+        )
+    }
+
+    pub fn selection_for_replace(
+        &self,
+        view_id: ViewId,
+        case_sensitive: bool,
+    ) -> impl Future<Item = (), Error = ClientError> {
+        self.notify(
+            "selection_for_replace",
+            json!({ "view_id": view_id, "case_sensitive": case_sensitive }),
+        )
+    }
+
+    pub fn selection_into_lines(
+        &self,
+        view_id: ViewId,
+    ) -> impl Future<Item = (), Error = ClientError> {
+        self.notify("selection_into_lines", json!({ "view_id": view_id }))
+    }
+
     //TODO: Use something more elegant than a `Value`
     pub fn modify_user_config(
         &self,
