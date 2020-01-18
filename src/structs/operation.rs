@@ -29,7 +29,7 @@ fn deserialize_operation_type<'de, D>(de: D) -> ::std::result::Result<OperationT
 where
     D: serde::Deserializer<'de>,
 {
-    let value: json::Value = r#try!(serde::Deserialize::deserialize(de));
+    let value: json::Value = serde::Deserialize::deserialize(de)?;
     match value {
         json::Value::String(ref s) if &*s == "copy" => Ok(OperationType::Copy_),
         json::Value::String(ref s) if &*s == "skip" => Ok(OperationType::Skip),
@@ -94,8 +94,7 @@ fn deserialize_operation() {
     let deserialized: Result<Operation, _> = serde_json::from_str(s);
     assert_eq!(deserialized.unwrap(), operation);
 
-    let s =
-        r#"{"lines":[{"cursor":[0],"styles":[],"text":"foo"},{"styles":[],"text":""}],"n":60,"op":"invalidate"}"#;
+    let s = r#"{"lines":[{"cursor":[0],"styles":[],"text":"foo"},{"styles":[],"text":""}],"n":60,"op":"invalidate"}"#;
     let operation = Operation {
         operation_type: OperationType::Invalidate,
         nb_lines: 60,
