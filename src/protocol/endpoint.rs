@@ -1,6 +1,7 @@
 use std::io;
 
-use futures::{Async, Future, Poll, Sink, Stream};
+use futures::{Future, Sink, Stream};
+use futures_core::task::Poll;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 use super::client::Client;
@@ -43,8 +44,8 @@ where
     fn flush(&mut self) {
         trace!("flushing stream");
         match self.stream.poll_complete() {
-            Ok(Async::Ready(())) => self.client.acknowledge_notifications(),
-            Ok(Async::NotReady) => (),
+            Ok(Poll::Ready(())) => self.client.acknowledge_notifications(),
+            Ok(Poll::NotReady) => (),
             Err(e) => panic!("Failed to flush the sink: {:?}", e),
         }
     }
@@ -54,19 +55,18 @@ impl<S, T: AsyncRead + AsyncWrite> Future for Endpoint<S, T>
 where
     S: Service,
 {
-    type Item = ();
-    type Error = io::Error;
+    type Output = Result<(), io::Error>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+    fn poll(&mut self) -> Poll<Self::Output> {
         trace!("polling stream");
         loop {
             match self.stream.poll()? {
-                Async::Ready(Some(msg)) => self.handle_message(msg),
-                Async::Ready(None) => {
+                Poll::Ready(Some(msg)) => self.handle_message(msg),
+                Poll::Ready(None) => {
                     warn!("stream closed by remote peer.");
-                    return Ok(Async::Ready(()));
+                    return Ok(Poll::Ready(()));
                 }
-                Async::NotReady => {
+                Poll::NotReady => {
                     trace!("no new message in the stream");
                     break;
                 }
@@ -81,8 +81,8 @@ where
         // Note that errors from poll_complete() are usually fatal,
         // hence the early return. See:
         // https://docs.rs/tokio/0.1.21/tokio/prelude/trait.Sink.html#errors-1
-        if let Async::NotReady = self.server.send_responses(&mut self.stream)? {
-            return Ok(Async::NotReady);
+        if let Poll::NotReady = self.server.send_responses(&mut self.stream)? {
+            return Ok(Poll::NotReady);
         }
 
         let mut client_shutdown = false;
@@ -96,9 +96,9 @@ where
 
         self.flush();
         if client_shutdown {
-            Ok(Async::Ready(()))
+            Ok(Poll::Ready(()))
         } else {
-            Ok(Async::NotReady)
+            Ok(Poll::NotReady)
         }
     }
 }
