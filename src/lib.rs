@@ -83,7 +83,7 @@
 //!     }
 //! }
 //!
-//! fn main() {
+//! fn init_xrl() {
 //!     tokio::run(future::lazy(move || {
 //!         // spawn Xi core
 //!         let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {}).unwrap();
