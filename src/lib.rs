@@ -144,7 +144,7 @@ mod structs;
 
 pub use crate::cache::LineCache;
 pub use crate::client::Client;
-pub use crate::core::{spawn, CoreStderr};
+pub use crate::core::{spawn, spawn_command, CoreStderr};
 pub use crate::errors::{ClientError, ServerError};
 pub use crate::frontend::{Frontend, FrontendBuilder, XiNotification};
 pub use crate::protocol::IntoStaticFuture;
