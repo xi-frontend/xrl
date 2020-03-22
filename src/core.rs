@@ -61,8 +61,20 @@ where
     F: Frontend + 'static + Send,
     B: FrontendBuilder<Frontend = F> + 'static,
 {
+    spawn_command(Command::new(executable), builder)
+}
+
+/// Same as [`spawn`] but accepts an arbitrary [`std::process::Command`].
+pub fn spawn_command<B, F>(
+    mut command: Command,
+    builder: B,
+) -> Result<(Client, CoreStderr), ClientError>
+where
+    F: Frontend + 'static + Send,
+    B: FrontendBuilder<Frontend = F> + 'static,
+{
     info!("starting xi-core");
-    let mut xi_core = Command::new(executable)
+    let mut xi_core = command
         .stdout(Stdio::piped())
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
