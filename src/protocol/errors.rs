@@ -13,7 +13,7 @@ pub enum DecodeError {
 
 impl Display for DecodeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
-        Error::description(self).fmt(f)
+        self.to_string().fmt(f)
     }
 }
 

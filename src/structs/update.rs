@@ -47,8 +47,7 @@ fn deserialize_update() {
     use super::operation::{Operation, OperationType};
     use super::Line;
 
-    let s =
-        r#"{"update":{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true},"view_id":"view-id-1"}"#;
+    let s = r#"{"update":{"ops":[{"n":60,"op":"invalidate"},{"lines":[{"cursor":[0],"styles":[],"text":"Bar"},{"styles":[],"text":"Foo"}],"n":12,"op":"ins"}],"pristine":true},"view_id":"view-id-1"}"#;
     let update = Update {
         operations: vec![
             Operation {

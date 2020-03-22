@@ -7,7 +7,6 @@ use futures::{Future, Poll, Stream};
 use std::io::{self, Read, Write};
 use std::process::Command;
 use std::process::Stdio;
-use tokio;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_codec::{Decoder, FramedRead};
 use tokio_process::{Child, ChildStderr, ChildStdin, ChildStdout, CommandExt};
