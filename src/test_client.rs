@@ -25,6 +25,7 @@ impl TestClient {
         })
     }
 
+    /// Set whether the test will fail if an error message from xi is received
     pub fn fail_on_error(&mut self, b: bool) {
         self.fail_on_errors = b;
     }

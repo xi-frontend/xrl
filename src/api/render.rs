@@ -1,5 +1,6 @@
 use crate::protocol::StyleDef;
 
+/// A Reference to a line in the line cache.
 #[derive(Debug, PartialEq)]
 pub struct LineRef<'a> {
     pub text: &'a str,
@@ -8,6 +9,7 @@ pub struct LineRef<'a> {
     pub line_num: Option<u64>,
 }
 
+/// A Reference to a single character in a line in the line cache.
 #[derive(Debug)]
 pub struct CharRef {
     pub position: (u32, u32),

@@ -14,6 +14,8 @@ use std::io::Result as IoResult;
 use crate::protocol::Message;
 use crate::XiLocation;
 
+/// An Active request is a request that has been sent to xi-core and should expect a
+/// response to from the client.
 #[derive(Debug, PartialEq, Clone)]
 pub struct ActiveRequest {
     id: usize,
@@ -25,6 +27,7 @@ pub enum RequestData {
     NewView { file_path: Option<String> },
 }
 
+/// This trait allows multiple types to be used as an xi client.
 #[async_trait::async_trait]
 pub trait ClientImpl: Send {
     fn next_id(&mut self) -> usize;
@@ -42,11 +45,14 @@ fn get_client_impl(location: XiLocation) -> IoResult<Box<dyn ClientImpl>> {
     }
 }
 
+/// Wraps a type that implements ClientImpl to abstract away the multiple client types.
 pub struct Client {
     inner: Box<dyn ClientImpl>,
 }
 
 impl Client {
+
+    /// Create a new client from a XiLocation
     pub fn new(xi: XiLocation) -> IoResult<Client> {
         Ok(Client {
             inner: get_client_impl(xi)?,

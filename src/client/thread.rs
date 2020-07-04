@@ -14,6 +14,7 @@ use tokio::sync::mpsc::{
 use crate::client::ClientImpl;
 use crate::protocol::Message;
 
+/// A Container for the Xi-Core Thread.
 pub struct Thread {
     request_id: usize,
     stdout_rx: Receiver<Value>,

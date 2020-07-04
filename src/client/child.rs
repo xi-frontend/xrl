@@ -12,6 +12,7 @@ use std::process::Stdio;
 use crate::client::ClientImpl;
 use crate::protocol::Message;
 
+/// A container for the input/output streams of a child process.
 pub struct ChildProcess {
     request_id: usize,
     stdin: ChildStdin,
@@ -20,6 +21,8 @@ pub struct ChildProcess {
 }
 
 impl ChildProcess {
+
+    /// Launch a new xi-core process from the command line.
     pub fn new(cmd: &str) -> IoResult<ChildProcess> {
         let mut inner = Command::new(cmd)
             .stdin(Stdio::piped())

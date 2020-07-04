@@ -2,6 +2,7 @@ use crate::protocol::Style;
 
 use std::collections::HashMap;
 
+/// Style cache used to store syntax highlighting styles.
 #[derive(Default)]
 pub struct StyleCache(HashMap<u64, Style>);
 

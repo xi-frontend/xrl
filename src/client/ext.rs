@@ -42,6 +42,7 @@ pub trait ClientExt: ClientImpl {
             .await
     }
 
+    /// Sends a edit command to xi-core.
     async fn edit(&mut self, view_id: ViewId, method: &str, params: Value) -> IoResult<()> {
         self.notify(
             "edit",
@@ -91,20 +92,24 @@ pub trait ClientExt: ClientImpl {
         self.notify("set_theme", json!(map)).await
     }
 
+    /// Set the Xi scroll window.
     async fn scroll(&mut self, view: ViewId, x: u64, y: u64) -> IoResult<()> {
         self.edit(view, "scroll", json!([x, y])).await
     }
 
+    /// Resize the xi window.
     async fn resize(&mut self, view: ViewId, x: u64, y: u64) -> IoResult<()> {
         self.edit(view, "resize", json!({"width":x, "height":y}))
             .await
     }
 
+    /// Send the save request.
     async fn save(&mut self, view: ViewId, file_path: &Path) -> IoResult<()> {
         self.notify("save", json!({"file_path":file_path, "view_id": view}))
             .await
     }
 
+    /// Set the search results.
     async fn find(
         &mut self,
         view: ViewId,
@@ -126,6 +131,7 @@ pub trait ClientExt: ClientImpl {
         .await
     }
 
+    /// Move to the next find result.
     async fn find_next(
         &mut self,
         view: ViewId,
@@ -143,6 +149,7 @@ pub trait ClientExt: ClientImpl {
         .await
     }
 
+    /// Move to the previous find result.
     async fn find_prev(
         &mut self,
         view: ViewId,
@@ -162,6 +169,7 @@ pub trait ClientExt: ClientImpl {
         .await
     }
 
+    /// Set whether find results are visible.
     async fn highlight_find(&mut self, view: ViewId, visible: bool) -> IoResult<()> {
         self.edit(view, "highlight_find", json!({ "visible": visible }))
             .await
