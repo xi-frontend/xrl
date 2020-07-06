@@ -40,8 +40,7 @@ pub trait ClientImpl: Send {
 fn get_client_impl(location: XiLocation) -> IoResult<Box<dyn ClientImpl>> {
     match location {
         XiLocation::Embeded => Ok(Box::new(Thread::new()?)),
-        XiLocation::Path { cmd } => Ok(Box::new(ChildProcess::new(&cmd)?)),
-        XiLocation::File { path } => Ok(Box::new(ChildProcess::new(path.to_str().unwrap())?)),
+        XiLocation::Path { cmd } => Ok(Box::new(ChildProcess::new(&cmd)?))
     }
 }
 

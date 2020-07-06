@@ -6,7 +6,6 @@ use serde_json::Value;
 use tokio::time::timeout;
 
 use std::io;
-use std::path::Path;
 use std::time::Duration;
 
 /// Special client with extra methods to make testing easier.
@@ -44,14 +43,6 @@ impl TestClient {
     /// using the from_location function.
     pub async fn embeded() -> io::Result<TestClient> {
         TestClient::from_location(XiLocation::Embeded).await
-    }
-    /// Helper function that will create a TestClient using the specified `path` xi-core
-    /// using the from_location function.
-    pub async fn file<F: AsRef<Path>>(path: F) -> io::Result<TestClient> {
-        let location = XiLocation::File {
-            path: path.as_ref().to_path_buf(),
-        };
-        TestClient::from_location(location).await
     }
 
     /// Helper function that will create a TestClient using the specified `cmd` xi-core
