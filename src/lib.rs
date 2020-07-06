@@ -15,7 +15,7 @@
 //! ```should_panic rust
 //!    use xrl::protocol::Message;
 //!
-//!    let data = b"XI-RPC";
+//!    let data = "XI-RPC";
 //!    let _msg = serde_json::from_str::<Message>(data).unwrap();
 //! ```
 //!
@@ -29,11 +29,14 @@
 //!
 
 pub mod api;
+#[cfg(feature = "client")]
 pub mod client;
 pub mod protocol;
 
 mod location;
 pub use self::location::XiLocation;
 
+#[cfg(feature = "client")]
 mod test_client;
+#[cfg(feature = "client")]
 pub use self::test_client::TestClient;
