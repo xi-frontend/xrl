@@ -1,3 +1,8 @@
+//! The Client struct uses the `ClientImpl` trait to perform internal operations. There are two
+//! structs used by the Client, `Thread` & `Child` One will send and receive through xi-core-lib
+//! library interface and the other will pass them to a child process called from the command
+//! line.
+
 mod child;
 pub use self::child::ChildProcess;
 

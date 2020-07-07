@@ -1,3 +1,8 @@
+//! This module holds common structures that can be mix and matched to help when creating an xi
+//! based editor. The `Editor` is the main struct and can handle all xi related actions.
+//! Their are 2 methods that can be used for rendering. `render_lines` that can be used to render
+//! line by line and `render_chars` that can be used to render individual characters at a time.
+
 mod line_cache;
 pub use self::line_cache::LineCache;
 
