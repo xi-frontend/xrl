@@ -1,156 +1,77 @@
-//! `xrl` is a Tokio based library to build clients for the Xi editor. The
-//! challenge with Xi RPC is that endpoints are both client (sending
-//! requests/notifications) and server (handling incoming
-//! requests/notifications).
+//! # `xrl`
+//! Crate for working with the Xi frontend protocol, with an optional
+//! tokio based client.
 //!
+//! xrl is split into three modules `protocol` contains structs that represent the xi-rpc
+//! protocol. The `client` module contains objects for starting the xi-core client either through
+//! the command line or a seperate thread. The `editor` module contains structures that can be used
+//! to store & handle messages from xi-core.
 //!
-//! ```rust
-//! extern crate futures;
-//! extern crate tokio;
-//! extern crate xrl;
+//! ### XiCore
+//! Xi Core can be loaded calling either an executable located in $PATH or by launching
+//! the xi-core-lib in a seperate thread. This can be specified by passing the
+//! [`XiLocation`](./enum.XiLocation.html) enum to the client struct.
+//! The `XiLocation::Embeded` Represents XiCore running in a seperate thread
+//! using the xi-core-lib interface and the `XiLocation::Path { .. }` will attempt to launch xi-core
+//! using [`Command`](https://docs.rs/tokio/0.2.21/tokio/process/struct.Command.html). Errors will
+//! be propagated through the `Message::Error` variant.
 //!
-//! use futures::{future, Future, Stream};
-//! use xrl::*;
+//! ### Protocol
+//! The [`protocol`](./protocol/index.html) module contains the xi frontend protocol.
+//! The main Object is the [`Message`](./protocol/enum.Message.html) enum.
+//! It can be serialized using the [`serde_json`](https://docs.rs/serde_json) crate.
 //!
-//! // Type that represent a `xi-core` peer. It implements `Frontend`,
-//! // which means it can handle notifications and requests from
-//! // `xi-core`.
-//! #[allow(dead_code)]
-//! struct MyFrontend {
-//!     // This is not actually used in this example, but if we wanted to
-//!     // our frontend could use a `Client` so that it could send
-//!     // requests and notifications to `xi-core`, instead of just
-//!     // handling incoming messages.
-//!     client: Client,
-//! }
+//! ### Client
+//! **Requires** [`client`](./client/index.html) **feature** (enabled by default)
+//! the client can be created with the `Client::new` method and methods for interacting
+//! with the editor can be used by importing the [`ClientExt`](./client/trait.ClientExt.html) trait.
 //!
-//! // Implement how our client handles notifications & requests from the core.
-//! impl Frontend for MyFrontend {
-//!     type NotificationResult = Result<(), ()>;
-//!     fn handle_notification(&mut self, notification: XiNotification) -> Self::NotificationResult {
-//!         use XiNotification::*;
-//!         match notification {
-//!             Update(update) => println!("received `update` from Xi core:\n{:?}", update),
-//!             ScrollTo(scroll) => println!("received `scroll_to` from Xi core:\n{:?}", scroll),
-//!             DefStyle(style) => println!("received `def_style` from Xi core:\n{:?}", style),
-//!             AvailablePlugins(plugins) => {
-//!                 println!("received `available_plugins` from Xi core:\n{:?}", plugins)
-//!             }
-//!             UpdateCmds(cmds) => println!("received `update_cmds` from Xi core:\n{:?}", cmds),
-//!             PluginStarted(plugin) => {
-//!                 println!("received `plugin_started` from Xi core:\n{:?}", plugin)
-//!             }
-//!             PluginStoped(plugin) => {
-//!                 println!("received `plugin_stoped` from Xi core:\n{:?}", plugin)
-//!             }
-//!             ConfigChanged(config) => {
-//!                 println!("received `config_changed` from Xi core:\n{:?}", config)
-//!             }
-//!             ThemeChanged(theme) => println!("received `theme_changed` from Xi core:\n{:?}", theme),
-//!             Alert(alert) => println!("received `alert` from Xi core:\n{:?}", alert),
-//!             AvailableThemes(themes) => {
-//!                 println!("received `available_themes` from Xi core:\n{:?}", themes)
-//!             }
-//!             FindStatus(status) => println!("received `find_status` from Xi core:\n{:?}", status),
-//!             ReplaceStatus(status) => {
-//!                 println!("received `replace_status` from Xi core:\n{:?}", status)
-//!             }
-//!             AvailableLanguages(langs) => {
-//!                 println!("received `available_languages` from Xi core:\n{:?}", langs)
-//!             }
-//!             LanguageChanged(lang) => {
-//!                 println!("received `language_changed` from Xi core:\n{:?}", lang)
-//!             }
-//!         }
-//!         Ok(())
-//!     }
+//! ### API
+//! **Requires** [`api`](./api/index.html) **feature** (enabled by default)
+//! This module contains common structures for building an editor with xi.
+//! Most can be used indevidually or in conjunction with other objects in the api module.
+//!   - **Editor**: Implements a basic xi client editor with most features implemented.
+//!   - **LineCache**: A basic linecache implementation to manage the view line cache.
+//!   - **StyleCache**: Style Cache to hold styles received from xi-core.
+//!   - **ViewList**: Store currently open views from xi.
+//!   - **View**: Store information related to a particular view.
+//!   - **ViewPort**: Visible window into the line cache.
 //!
-//!     type MeasureWidthResult = Result<Vec<Vec<f32>>, ()>;
-//!     // we don't actually use the `request` argument in this example,
-//!     // hence the attribute.
-//!     #[allow(unused_variables)]
-//!     fn handle_measure_width(&mut self, request: MeasureWidth) -> Self::MeasureWidthResult {
-//!         Ok(Vec::new())
-//!     }
-//! }
+//! ### Testing
+//! The [`TestClient`](./struct.TestClient.html) is used for testing this library and my prove
+//! useful when testing frontend components. It has the same API as the Client struct with extra
+//! `fail_on_error` & `check-response` methods to set whether receiving an error from xi should
+//! cause an error and to wait for a certain response respectivily.
 //!
-//! struct MyFrontendBuilder;
+//! ### Examples
 //!
-//! impl FrontendBuilder for MyFrontendBuilder {
-//!     type Frontend = MyFrontend;
-//!     fn build(self, client: Client) -> Self::Frontend {
-//!         MyFrontend { client }
-//!     }
-//! }
+//! #### Parse Xi Rpc
+//! ```should_panic rust
+//!    use xrl::protocol::Message;
 //!
-//! fn init_xrl() {
-//!     tokio::run(future::lazy(move || {
-//!         // spawn Xi core
-//!         let (client, core_stderr) = spawn("xi-core", MyFrontendBuilder {}).unwrap();
-//!
-//!         // start logging Xi core's stderr
-//!         tokio::spawn(
-//!             core_stderr
-//!                 .for_each(|msg| {
-//!                     println!("xi-core stderr: {}", msg);
-//!                     Ok(())
-//!                 })
-//!                 .map_err(|_| ()),
-//!         );
-//!
-//!         let client_clone = client.clone();
-//!         client
-//!             // Xi core expects the first notification to be
-//!             // "client_started"
-//!             .client_started(None, None)
-//!             .map_err(|e| eprintln!("failed to send \"client_started\": {:?}", e))
-//!             .and_then(move |_| {
-//!                 let client = client_clone.clone();
-//!                 client
-//!                     .new_view(None)
-//!                     .map(|view_name| println!("opened new view: {}", view_name))
-//!                     .map_err(|e| eprintln!("failed to open a new view: {:?}", e))
-//!                     .and_then(move |_| {
-//!                         // Forces to shut down the Xi-RPC
-//!                         // endoint. Otherwise, this example would keep
-//!                         // running until the xi-core process
-//!                         // terminates.
-//!                         println!("shutting down");
-//!                         client_clone.shutdown();
-//!                         Ok(())
-//!                     })
-//!             })
-//!     }));
-//! }
+//!    let data = "XI-RPC";
+//!    let _msg = serde_json::from_str::<Message>(data).unwrap();
 //! ```
+//!
+//! #### Create a new client
+//! ```rust
+//!    use xrl::XiLocation;
+//!    use xrl::client::Client;
+//!
+//!    let _client = Client::new(XiLocation::Embeded).unwrap();
+//! ```
+//!
 
-#![deny(clippy::all)]
-#![allow(clippy::type_complexity)]
+#[cfg(feature = "api")]
+pub mod api;
+#[cfg(feature = "client")]
+pub mod client;
+pub mod protocol;
 
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
+mod location;
+pub use self::location::XiLocation;
 
-mod cache;
-mod client;
-mod core;
-mod errors;
-mod frontend;
-mod protocol;
-mod structs;
-
-pub use crate::cache::LineCache;
-pub use crate::client::Client;
-pub use crate::core::{spawn, spawn_command, CoreStderr};
-pub use crate::errors::{ClientError, ServerError};
-pub use crate::frontend::{Frontend, FrontendBuilder, XiNotification};
-pub use crate::protocol::IntoStaticFuture;
-pub use crate::structs::{
-    Alert, AvailableLanguages, AvailablePlugins, AvailableThemes, ConfigChanged, ConfigChanges,
-    FindStatus, LanguageChanged, Line, MeasureWidth, ModifySelection, Operation, OperationType,
-    PluginStarted, PluginStoped, Position, Query, ReplaceStatus, ScrollTo, Status, Style, StyleDef,
-    ThemeChanged, ThemeSettings, Update, UpdateCmds, ViewId,
-};
+#[cfg(feature = "client")]
+mod test_client;
+#[cfg(feature = "client")]
+pub use self::test_client::TestClient;
