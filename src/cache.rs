@@ -254,7 +254,7 @@ impl<'a> UpdateHelper<'a> {
         }));
     }
 
-    fn apply_update(&mut self, nb_lines: u64, lines: Vec<Line>) {
+    fn apply_update(&mut self, nb_lines: u64, lines: Vec<Line>, first_line_num: Option<u64>) {
         debug!("updating {} lines", nb_lines);
         let old_lines = &mut self.old_cache.lines;
         let new_lines = &mut self.new_cache.lines;
@@ -268,6 +268,18 @@ impl<'a> UpdateHelper<'a> {
             panic!("failed to update the cache");
         }
 
+        let diff = if let Some(new_first_line_num) = first_line_num {
+            old_lines
+                .iter()
+                .find_map(|line| {
+                    line.line_num
+                        .map(|num| new_first_line_num as i64 - num as i64)
+                })
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
         new_lines.extend(
             old_lines
                 .drain(0..nb_lines as usize)
@@ -275,6 +287,9 @@ impl<'a> UpdateHelper<'a> {
                 .map(|(mut old_line, update)| {
                     old_line.cursor = update.cursor;
                     old_line.styles = update.styles;
+                    old_line.line_num = old_line
+                        .line_num
+                        .map(|line_num| (line_num as i64 + diff) as u64);
                     old_line
                 }),
         )
@@ -296,7 +311,7 @@ impl<'a> UpdateHelper<'a> {
                 OperationType::Skip => self.apply_skip(op.nb_lines),
                 OperationType::Invalidate => self.apply_invalidate(op.nb_lines),
                 OperationType::Insert => self.apply_insert(op.lines),
-                OperationType::Update => self.apply_update(op.nb_lines, op.lines),
+                OperationType::Update => self.apply_update(op.nb_lines, op.lines, op.line_num),
             }
 
             debug!("cache helper after operation {:?}", self);
