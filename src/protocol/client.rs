@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::io;
 
-use futures::sync::{mpsc, oneshot};
-use futures::{Async, Future, Poll, Stream};
+use futures::{Future, Stream};
+use futures_channel::{mpsc, oneshot};
+use futures_core::task::Poll;
 use serde_json::Value;
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -23,10 +24,9 @@ type AckTx = oneshot::Sender<()>;
 pub struct Response(oneshot::Receiver<Result<Value, Value>>);
 
 impl Future for Response {
-    type Item = Result<Value, Value>;
-    type Error = RpcError;
+    type Output = Result<Result<Value, Value>, RpcError>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+    fn poll(&mut self) -> Poll<Self::Output> {
         self.0
             .poll()
             .map_err(|oneshot::Canceled| RpcError::ResponseCanceled)
@@ -39,10 +39,9 @@ impl Future for Response {
 pub struct Ack(oneshot::Receiver<()>);
 
 impl Future for Ack {
-    type Item = ();
-    type Error = RpcError;
+    type Output = Result<(), RpcError>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+    fn poll(&mut self) -> Poll<Self::Output> {
         self.0
             .poll()
             .map_err(|oneshot::Canceled| RpcError::AckCanceled)
@@ -93,7 +92,7 @@ impl InnerClient {
         trace!("polling shutdown signal channel");
         loop {
             match self.shutdown_rx.poll() {
-                Ok(Async::Ready(Some(()))) => {
+                Ok(Poll::Ready(Some(()))) => {
                     info!("Received shutdown signal");
                     self.shutdown();
                     // Note that in theory, we should continue polling
@@ -103,12 +102,12 @@ impl InnerClient {
                     // are being polled or not.
                     break;
                 }
-                Ok(Async::Ready(None)) => {
+                Ok(Poll::Ready(None)) => {
                     warn!("client closed the shutdown signal channel");
                     self.shutdown();
                     break;
                 }
-                Ok(Async::NotReady) => {
+                Ok(Poll::NotReady) => {
                     trace!("no shutdown signal from client");
                     break;
                 }
@@ -124,16 +123,16 @@ impl InnerClient {
         trace!("polling client notifications channel");
         loop {
             match self.notifications_rx.poll() {
-                Ok(Async::Ready(Some((notification, ack_sender)))) => {
+                Ok(Poll::Ready(Some((notification, ack_sender)))) => {
                     trace!("sending notification: {:?}", notification);
                     stream.send(Message::Notification(notification));
                     self.pending_notifications.push(ack_sender);
                 }
-                Ok(Async::NotReady) => {
+                Ok(Poll::NotReady) => {
                     trace!("no new notification from client");
                     break;
                 }
-                Ok(Async::Ready(None)) => {
+                Ok(Poll::Ready(None)) => {
                     warn!("client closed the notifications channel");
                     self.shutdown();
                     break;
@@ -152,7 +151,7 @@ impl InnerClient {
         trace!("polling client requests channel");
         loop {
             match self.requests_rx.poll() {
-                Ok(Async::Ready(Some((mut request, response_sender)))) => {
+                Ok(Poll::Ready(Some((mut request, response_sender)))) => {
                     self.request_id += 1;
                     trace!("sending request: {:?}", request);
                     request.id = self.request_id;
@@ -160,12 +159,12 @@ impl InnerClient {
                     self.pending_requests
                         .insert(self.request_id, response_sender);
                 }
-                Ok(Async::Ready(None)) => {
+                Ok(Poll::Ready(None)) => {
                     warn!("client closed the requests channel.");
                     self.shutdown();
                     break;
                 }
-                Ok(Async::NotReady) => {
+                Ok(Poll::NotReady) => {
                     trace!("no new request from client");
                     break;
                 }
@@ -273,10 +272,9 @@ impl Client {
 }
 
 impl Future for Client {
-    type Item = ();
-    type Error = io::Error;
+    type Output = Result<(), io::Error>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        Ok(Async::Ready(()))
+    fn poll(&mut self) -> Poll<Self::Output> {
+        Ok(Poll::Ready(()))
     }
 }

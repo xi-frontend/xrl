@@ -6,7 +6,7 @@ use crate::structs::{
     ThemeChanged, Update, UpdateCmds,
 };
 use futures::{
-    future::{self, Either, FutureResult},
+    future::{self, Either},
     Future,
 };
 use serde_json::{from_value, to_value, Value};
@@ -34,10 +34,10 @@ pub enum XiNotification {
 /// The `Frontend` trait must be implemented by clients. It defines how the
 /// client handles notifications and requests coming from `xi-core`.
 pub trait Frontend {
-    type NotificationResult: IntoStaticFuture<Item = (), Error = ()>;
+    type NotificationResult: IntoStaticFuture<Output = Result<(), ()>>;
     fn handle_notification(&mut self, notification: XiNotification) -> Self::NotificationResult;
 
-    type MeasureWidthResult: IntoStaticFuture<Item = Vec<Vec<f32>>, Error = ()>;
+    type MeasureWidthResult: IntoStaticFuture<Output = Result<Vec<Vec<f32>>, ()>>;
     fn handle_measure_width(&mut self, request: MeasureWidth) -> Self::MeasureWidthResult;
 }
 
@@ -62,14 +62,11 @@ where
     }
 }
 
-impl<F: Frontend + Send> Service for F {
+impl<F: Frontend + Send + Sized> Service for F {
     type T = Value;
     type E = Value;
-    type RequestFuture = Box<dyn Future<Item = Self::T, Error = Self::E> + 'static + Send>;
-    type NotificationFuture = Either<
-        <<F as Frontend>::NotificationResult as IntoStaticFuture>::Future,
-        FutureResult<(), ()>,
-    >;
+    type RequestFuture = Box<dyn Future<Output = Result<Self::T, Self::E>> + 'static + Send>;
+    type NotificationFuture = <<F as Frontend>::NotificationResult as IntoStaticFuture>::Future;
 
     fn handle_request(&mut self, method: &str, params: Value) -> Self::RequestFuture {
         info!("<<< request: method={}, params={}", method, &params);
@@ -111,158 +108,158 @@ impl<F: Frontend + Send> Service for F {
         info!("<<< notification: method={}, params={}", method, &params);
         match method {
             "update" => match from_value::<Update>(params) {
-                Ok(update) => Either::A(
+                Ok(update) => Either::Left(
                     self.handle_notification(XiNotification::Update(update))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid update notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
 
             "scroll_to" => match from_value::<ScrollTo>(params) {
-                Ok(scroll_to) => Either::A(
+                Ok(scroll_to) => Either::Left(
                     self.handle_notification(XiNotification::ScrollTo(scroll_to))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid scroll_to notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
 
             "def_style" => match from_value::<Style>(params) {
-                Ok(style) => Either::A(
+                Ok(style) => Either::Left(
                     self.handle_notification(XiNotification::DefStyle(style))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid def_style notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "available_plugins" => match from_value::<AvailablePlugins>(params) {
-                Ok(plugins) => Either::A(
+                Ok(plugins) => Either::Left(
                     self.handle_notification(XiNotification::AvailablePlugins(plugins))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid available_plugins notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "plugin_started" => match from_value::<PluginStarted>(params) {
-                Ok(plugin) => Either::A(
+                Ok(plugin) => Either::Left(
                     self.handle_notification(XiNotification::PluginStarted(plugin))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid plugin_started notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "plugin_stoped" => match from_value::<PluginStoped>(params) {
-                Ok(plugin) => Either::A(
+                Ok(plugin) => Either::Left(
                     self.handle_notification(XiNotification::PluginStoped(plugin))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid plugin_stoped notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "update_cmds" => match from_value::<UpdateCmds>(params) {
-                Ok(cmds) => Either::A(
+                Ok(cmds) => Either::Left(
                     self.handle_notification(XiNotification::UpdateCmds(cmds))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid update_cmds notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "config_changed" => match from_value::<ConfigChanged>(params) {
-                Ok(config) => Either::A(
+                Ok(config) => Either::Left(
                     self.handle_notification(XiNotification::ConfigChanged(config))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid config_changed notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "theme_changed" => match from_value::<ThemeChanged>(params) {
-                Ok(theme) => Either::A(
+                Ok(theme) => Either::Left(
                     self.handle_notification(XiNotification::ThemeChanged(theme))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid theme_changed notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "alert" => match from_value::<Alert>(params) {
-                Ok(alert) => Either::A(
+                Ok(alert) => Either::Left(
                     self.handle_notification(XiNotification::Alert(alert))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid alert notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "available_themes" => match from_value::<AvailableThemes>(params) {
-                Ok(themes) => Either::A(
+                Ok(themes) => Either::Left(
                     self.handle_notification(XiNotification::AvailableThemes(themes))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid available_themes notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "find_status" => match from_value::<FindStatus>(params) {
-                Ok(find_status) => Either::A(
+                Ok(find_status) => Either::Left(
                     self.handle_notification(XiNotification::FindStatus(find_status))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid find_status notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "replace_status" => match from_value::<ReplaceStatus>(params) {
-                Ok(replace_status) => Either::A(
+                Ok(replace_status) => Either::Left(
                     self.handle_notification(XiNotification::ReplaceStatus(replace_status))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid replace_status notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "available_languages" => match from_value::<AvailableLanguages>(params) {
-                Ok(available_langs) => Either::A(
+                Ok(available_langs) => Either::Left(
                     self.handle_notification(XiNotification::AvailableLanguages(available_langs))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid available_languages notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
             "language_changed" => match from_value::<LanguageChanged>(params) {
-                Ok(lang) => Either::A(
+                Ok(lang) => Either::Left(
                     self.handle_notification(XiNotification::LanguageChanged(lang))
                         .into_static_future(),
                 ),
                 Err(e) => {
                     error!("received invalid language_changed notification: {:?}", e);
-                    Either::B(future::err(()))
+                    Either::Right(future::err(()))
                 }
             },
-            _ => Either::B(future::err(())),
+            _ => Either::Right(future::err(())),
         }
     }
 }

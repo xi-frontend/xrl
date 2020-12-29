@@ -1,7 +1,9 @@
 use std::io;
 
-use futures::sync::mpsc;
-use futures::{Async, Future, IntoFuture, Poll, Sink, Stream};
+use futures::{Future, Sink, Stream};
+use futures_channel::mpsc;
+use futures_core::task::Poll;
+use futures_util::future::IntoFuture;
 use serde_json::Value;
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -13,8 +15,8 @@ use super::transport::Transport;
 pub trait Service: Send {
     type T: Into<Value> + Send + 'static;
     type E: Into<Value> + Send + 'static;
-    type RequestFuture: IntoStaticFuture<Item = Self::T, Error = Self::E>;
-    type NotificationFuture: IntoStaticFuture<Item = (), Error = ()>;
+    type RequestFuture: IntoStaticFuture;
+    type NotificationFuture: IntoStaticFuture;
 
     fn handle_request(&mut self, method: &str, params: Value) -> Self::RequestFuture;
 
@@ -45,10 +47,10 @@ impl<S: Service> Server<S> {
     pub fn send_responses<T: AsyncRead + AsyncWrite>(
         &mut self,
         sink: &mut Transport<T>,
-    ) -> Poll<(), io::Error> {
+    ) -> Poll<()> {
         trace!("Server: flushing responses");
         while let Ok(poll) = self.pending_responses.poll() {
-            if let Async::Ready(Some((id, result))) = poll {
+            if let Poll::Ready(Some((id, result))) = poll {
                 let msg = Message::Response(ResponseMessage {
                     id,
                     result: result.map(Into::into).map_err(Into::into),
@@ -57,7 +59,7 @@ impl<S: Service> Server<S> {
                 // don't panic here.
                 sink.start_send(msg).unwrap();
             } else {
-                if let Async::Ready(None) = poll {
+                if let Poll::Ready(None) = poll {
                     panic!("we store the sender, it can't be dropped");
                 }
 
@@ -114,25 +116,21 @@ pub trait ServiceBuilder {
 /// in that the returned future has the `'static` lifetime.
 pub trait IntoStaticFuture {
     /// The future that this type can be converted into.
-    type Future: Future<Item = Self::Item, Error = Self::Error> + 'static + Send;
+    type Future: Future<Output = Self::Output> + 'static + Send;
     /// The item that the future may resolve with.
-    type Item;
-    /// The error that the future may resolve with.
-    type Error;
+    type Output;
 
     /// Consumes this object and produces a future.
     fn into_static_future(self) -> Self::Future;
 }
 
-impl<F: IntoFuture> IntoStaticFuture for F
+impl<F: Future> IntoStaticFuture for F
 where
-    <F as IntoFuture>::Future: 'static + Send,
+    F: 'static + Send,
 {
-    type Future = <F as IntoFuture>::Future;
-    type Item = <F as IntoFuture>::Item;
-    type Error = <F as IntoFuture>::Error;
+    type Output = F::Output;
 
     fn into_static_future(self) -> Self::Future {
-        self.into_future()
+        IntoFuture::new(self)
     }
 }

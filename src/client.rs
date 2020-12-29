@@ -36,7 +36,7 @@ impl Client {
         &self,
         method: &str,
         params: Value,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         info!(">>> notification: method={}, params={}", method, &params);
         self.0
             .notify(method, params)
@@ -50,7 +50,7 @@ impl Client {
         &self,
         method: &str,
         params: Value,
-    ) -> impl Future<Item = Value, Error = ClientError> {
+    ) -> impl Future<Output = Result<Value, ClientError>> {
         info!(">>> request : method={}, params={}", method, &params);
         self.0
             .request(method, params)
@@ -66,10 +66,10 @@ impl Client {
         view_id: ViewId,
         method: &str,
         params: Option<T>,
-    ) -> impl Future<Item = Value, Error = ClientError> {
+    ) -> impl Future<Output = Result<Value, ClientError>> {
         match get_edit_params(view_id, method, params) {
-            Ok(value) => Either::A(self.request("edit", value)),
-            Err(e) => Either::B(future::err(e)),
+            Ok(value) => Either::Left(self.request("edit", value)),
+            Err(e) => Either::Right(future::err(e)),
         }
     }
 
@@ -81,10 +81,10 @@ impl Client {
         view_id: ViewId,
         method: &str,
         params: Option<T>,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         match get_edit_params(view_id, method, params) {
-            Ok(value) => Either::A(self.notify("edit", value)),
-            Err(e) => Either::B(future::err(e)),
+            Ok(value) => Either::Left(self.notify("edit", value)),
+            Err(e) => Either::Right(future::err(e)),
         }
     }
 
@@ -98,7 +98,7 @@ impl Client {
         view_id: ViewId,
         first_line: u64,
         last_line: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "scroll", Some(json!([first_line, last_line])))
     }
 
@@ -106,11 +106,11 @@ impl Client {
         &self,
         view_id: ViewId,
         line: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "goto_line", Some(json!({ "line": line })))
     }
 
-    pub fn copy(&self, view_id: ViewId) -> impl Future<Item = Value, Error = ClientError> {
+    pub fn copy(&self, view_id: ViewId) -> impl Future<Output = Result<Value, ClientError>> {
         self.edit_request(view_id, "copy", None as Option<Value>)
     }
 
@@ -118,19 +118,19 @@ impl Client {
         &self,
         view_id: ViewId,
         buffer: &str,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "paste", Some(json!({ "chars": buffer })))
     }
 
-    pub fn cut(&self, view_id: ViewId) -> impl Future<Item = Value, Error = ClientError> {
+    pub fn cut(&self, view_id: ViewId) -> impl Future<Output = Result<Value, ClientError>> {
         self.edit_request(view_id, "cut", None as Option<Value>)
     }
 
-    pub fn undo(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn undo(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "undo", None as Option<Value>)
     }
 
-    pub fn redo(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn redo(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "redo", None as Option<Value>)
     }
 
@@ -141,7 +141,7 @@ impl Client {
         case_sensitive: bool,
         regex: bool,
         whole_words: bool,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "find",
@@ -160,7 +160,7 @@ impl Client {
         wrap_around: bool,
         allow_same: bool,
         modify_selection: ModifySelection,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             command,
@@ -177,7 +177,7 @@ impl Client {
         wrap_around: bool,
         allow_same: bool,
         modify_selection: ModifySelection,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.find_other(
             view_id,
             "find_next",
@@ -193,7 +193,7 @@ impl Client {
         wrap_around: bool,
         allow_same: bool,
         modify_selection: ModifySelection,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.find_other(
             view_id,
             "find_previous",
@@ -203,7 +203,7 @@ impl Client {
         )
     }
 
-    pub fn find_all(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn find_all(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "find_all", None as Option<Value>)
     }
 
@@ -211,7 +211,7 @@ impl Client {
         &self,
         view_id: ViewId,
         visible: bool,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "highlight_find",
@@ -219,11 +219,11 @@ impl Client {
         )
     }
 
-    pub fn left(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn left(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_left", None as Option<Value>)
     }
 
-    pub fn left_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn left_sel(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_left_and_modify_selection",
@@ -231,11 +231,11 @@ impl Client {
         )
     }
 
-    pub fn right(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn right(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_right", None as Option<Value>)
     }
 
-    pub fn right_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn right_sel(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_right_and_modify_selection",
@@ -243,11 +243,11 @@ impl Client {
         )
     }
 
-    pub fn up(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn up(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_up", None as Option<Value>)
     }
 
-    pub fn up_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn up_sel(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_up_and_modify_selection",
@@ -255,11 +255,11 @@ impl Client {
         )
     }
 
-    pub fn down(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn down(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_down", None as Option<Value>)
     }
 
-    pub fn down_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn down_sel(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_down_and_modify_selection",
@@ -267,30 +267,30 @@ impl Client {
         )
     }
 
-    pub fn backspace(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn backspace(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.del(view_id)
     }
 
-    pub fn delete(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn delete(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "delete_forward", None as Option<Value>)
     }
 
-    pub fn del(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn del(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "delete_backward", None as Option<Value>)
     }
 
     pub fn delete_word_backward(
         &self,
         view_id: ViewId,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "delete_word_backward", None as Option<Value>)
     }
 
-    pub fn page_up(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn page_up(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "scroll_page_up", None as Option<Value>)
     }
 
-    pub fn page_up_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn page_up_sel(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "page_up_and_modify_selection",
@@ -298,11 +298,11 @@ impl Client {
         )
     }
 
-    pub fn page_down(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn page_down(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "scroll_page_down", None as Option<Value>)
     }
 
-    pub fn page_down_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn page_down_sel(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "page_down_and_modify_selection",
@@ -310,11 +310,11 @@ impl Client {
         )
     }
 
-    pub fn line_start(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn line_start(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_to_left_end_of_line", None as Option<Value>)
     }
 
-    pub fn line_start_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn line_start_sel(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_to_left_end_of_line_and_modify_selection",
@@ -322,11 +322,11 @@ impl Client {
         )
     }
 
-    pub fn line_end(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn line_end(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_to_right_end_of_line", None as Option<Value>)
     }
 
-    pub fn line_end_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn line_end_sel(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_to_right_end_of_line_and_modify_selection",
@@ -334,7 +334,7 @@ impl Client {
         )
     }
 
-    pub fn document_begin(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn document_begin(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_to_beginning_of_document",
@@ -345,7 +345,7 @@ impl Client {
     pub fn document_begin_sel(
         &self,
         view_id: ViewId,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_to_beginning_of_document_and_modify_selection",
@@ -353,11 +353,14 @@ impl Client {
         )
     }
 
-    pub fn document_end(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn document_end(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_to_end_of_document", None as Option<Value>)
     }
 
-    pub fn document_end_sel(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn document_end_sel(
+        &self,
+        view_id: ViewId,
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_to_end_of_document_and_modify_selection",
@@ -365,14 +368,14 @@ impl Client {
         )
     }
 
-    pub fn select_all(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn select_all(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "select_all", None as Option<Value>)
     }
 
     pub fn collapse_selections(
         &self,
         view_id: ViewId,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "collapse_selections", None as Option<Value>)
     }
 
@@ -380,27 +383,27 @@ impl Client {
         &self,
         view_id: ViewId,
         string: &str,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "insert", Some(json!({ "chars": string })))
     }
 
-    pub fn insert_newline(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn insert_newline(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "insert_newline", None as Option<Value>)
     }
 
-    pub fn insert_tab(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn insert_tab(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "insert_tab", None as Option<Value>)
     }
 
-    pub fn f1(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn f1(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "debug_rewrap", None as Option<Value>)
     }
 
-    pub fn f2(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn f2(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "debug_test_fg_spans", None as Option<Value>)
     }
 
-    pub fn char(&self, view_id: ViewId, ch: char) -> impl Future<Item = (), Error = ClientError> {
+    pub fn char(&self, view_id: ViewId, ch: char) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "insert", Some(json!({ "chars": ch })))
     }
 
@@ -410,7 +413,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "click", Some(json!([line, column, 0, 1])))
     }
 
@@ -419,7 +422,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let ty = "point_select";
         self.edit_notify(
             view_id,
@@ -433,7 +436,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let ty = "toggle_sel";
         self.edit_notify(
             view_id,
@@ -447,7 +450,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let ty = "range_select";
         self.edit_notify(
             view_id,
@@ -461,7 +464,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let ty = "range_select";
         self.edit_notify(
             view_id,
@@ -475,7 +478,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let ty = "word_select";
         self.edit_notify(
             view_id,
@@ -489,7 +492,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let ty = "multi_line_select";
         self.edit_notify(
             view_id,
@@ -503,7 +506,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let ty = "multi_word_select";
         self.edit_notify(
             view_id,
@@ -517,7 +520,7 @@ impl Client {
         view_id: ViewId,
         line: u64,
         column: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "drag", Some(json!([line, column, 0])))
     }
 
@@ -525,10 +528,7 @@ impl Client {
     /// ```ignore
     /// {"id":1,"method":"new_view","params":{"file_path":"foo/test.txt"}}
     /// ```
-    pub fn new_view(
-        &self,
-        file_path: Option<String>,
-    ) -> impl Future<Item = ViewId, Error = ClientError> {
+    pub fn new_view(&self, file_path: Option<String>) -> impl Future<Result<ViewId, ClientError>> {
         let params = if let Some(file_path) = file_path {
             json!({ "file_path": file_path })
         } else {
@@ -539,7 +539,7 @@ impl Client {
     }
 
     /// send a `"close_view"` notifycation to the core.
-    pub fn close_view(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn close_view(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.notify("close_view", json!({ "view_id": view_id }))
     }
 
@@ -547,12 +547,12 @@ impl Client {
         &self,
         view_id: ViewId,
         file_path: &str,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let params = json!({"view_id": view_id, "file_path": file_path});
         self.notify("save", params).and_then(|_| Ok(()))
     }
 
-    pub fn set_theme(&self, theme: &str) -> impl Future<Item = (), Error = ClientError> {
+    pub fn set_theme(&self, theme: &str) -> impl Future<Output = Result<(), ClientError>> {
         let params = json!({ "theme_name": theme });
         self.notify("set_theme", params).and_then(|_| Ok(()))
     }
@@ -561,7 +561,7 @@ impl Client {
         &self,
         config_dir: Option<&str>,
         client_extras_dir: Option<&str>,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let mut params = Map::new();
         if let Some(path) = config_dir {
             let _ = params.insert("config_dir".into(), json!(path));
@@ -576,7 +576,7 @@ impl Client {
         &self,
         view_id: ViewId,
         name: &str,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let params = json!({"view_id": view_id, "plugin_name": name});
         self.notify("start", params).and_then(|_| Ok(()))
     }
@@ -585,7 +585,7 @@ impl Client {
         &self,
         view_id: ViewId,
         name: &str,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let params = json!({"view_id": view_id, "plugin_name": name});
         self.notify("stop", params).and_then(|_| Ok(()))
     }
@@ -596,7 +596,7 @@ impl Client {
         plugin: &str,
         method: &str,
         params: &Value,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         let params = json!({
             "view_id": view_id,
             "receiver": plugin,
@@ -608,22 +608,25 @@ impl Client {
         self.notify("plugin_rpc", params).and_then(|_| Ok(()))
     }
 
-    pub fn outdent(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn outdent(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "outdent", None as Option<Value>)
     }
 
-    pub fn move_word_left(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn move_word_left(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_word_left", None as Option<Value>)
     }
 
-    pub fn move_word_right(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn move_word_right(
+        &self,
+        view_id: ViewId,
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "move_word_right", None as Option<Value>)
     }
 
     pub fn move_word_left_sel(
         &self,
         view_id: ViewId,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_word_left_and_modify_selection",
@@ -634,7 +637,7 @@ impl Client {
     pub fn move_word_right_sel(
         &self,
         view_id: ViewId,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "move_word_right_and_modify_selection",
@@ -647,7 +650,7 @@ impl Client {
         view_id: ViewId,
         width: i32,
         height: i32,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "resize",
@@ -663,7 +666,7 @@ impl Client {
         view_id: ViewId,
         chars: &str,
         preserve_case: bool,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "replace",
@@ -674,11 +677,11 @@ impl Client {
         )
     }
 
-    pub fn replace_next(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn replace_next(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "replace_next", None as Option<Value>)
     }
 
-    pub fn replace_all(&self, view_id: ViewId) -> impl Future<Item = (), Error = ClientError> {
+    pub fn replace_all(&self, view_id: ViewId) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(view_id, "replace_all", None as Option<Value>)
     }
 
@@ -686,7 +689,7 @@ impl Client {
         &self,
         view_id: ViewId,
         lang_name: &str,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.notify(
             "set_language",
             json!({ "view_id": view_id, "language_id": lang_name }),
@@ -727,7 +730,7 @@ impl Client {
         &self,
         domain: &str,
         changes: Value,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.notify(
             "modify_user_config",
             json!({
@@ -742,7 +745,7 @@ impl Client {
         view_id: ViewId,
         first_line: u64,
         last_line: u64,
-    ) -> impl Future<Item = (), Error = ClientError> {
+    ) -> impl Future<Output = Result<(), ClientError>> {
         self.edit_notify(
             view_id,
             "request_lines",

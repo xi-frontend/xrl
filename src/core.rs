@@ -3,7 +3,8 @@ use crate::frontend::{Frontend, FrontendBuilder};
 use crate::protocol::Endpoint;
 use crate::ClientError;
 use bytes::BytesMut;
-use futures::{Future, Poll, Stream};
+use futures::{Future, Stream};
+use futures_core::task::{Context, Poll};
 use std::io::{self, Read, Write};
 use std::process::Command;
 use std::process::Stdio;
@@ -42,8 +43,8 @@ impl Write for Core {
 }
 
 impl AsyncWrite for Core {
-    fn shutdown(&mut self) -> Poll<(), io::Error> {
-        self.stdin.shutdown()
+    fn poll_shutdown(&mut self, cx: &mut Context) -> Poll<Result<(), io::Error>> {
+        self.stdin.poll_shutdown()
     }
 }
 
@@ -129,10 +130,9 @@ impl CoreStderr {
 }
 
 impl Stream for CoreStderr {
-    type Item = String;
-    type Error = io::Error;
+    type Item = Result<String, io::Error>;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+    fn poll_next(&mut self, cx: &mut Context) -> Poll<Option<Self::Item>> {
         self.0.poll()
     }
 }
